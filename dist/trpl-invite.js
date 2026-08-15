@@ -142,7 +142,7 @@
         if (a.name.indexOf('data-') !== 0) continue;
         var key = camel(a.name.slice(5));
         if (key === 'trplInvite') continue;
-        if (!(key in DEFAULTS)) continue;
+        if (!Object.prototype.hasOwnProperty.call(DEFAULTS, key)) continue;
         cfg[key] = a.value;
       }
     }
@@ -169,11 +169,24 @@
     });
   }
 
-  function cssUrl(u) { return "url('" + String(u).replace(/'/g, "\\'") + "')"; }
+  function cssUrl(u) {
+    return "url('" + String(u)
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/[\n\r]/g, '') + "')";
+  }
+
+  /* Only ever emit links a visitor can safely follow. */
+  function safeUrl(u) {
+    var v = String(u || '').trim();
+    return /^(https?:|mailto:|tel:|\/|#|\?)/i.test(v) ? v : '';
+  }
 
   var fontsLoaded = {};
   function loadFont(url) {
     if (!url || fontsLoaded[url]) return;
+    // this is the one place the embed touches the host document, so be strict
+    if (!/^https:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|use\.typekit\.net|p\.typekit\.net)\//i.test(url)) return;
     fontsLoaded[url] = true;
     var l = document.createElement('link');
     l.rel = 'stylesheet';
@@ -183,8 +196,11 @@
 
   /* Relative luminance of a #rrggbb colour, per WCAG. */
   function luminance(hex) {
-    var m = /^#([0-9a-f]{6})$/i.exec(String(hex).trim());
-    if (!m) return 0;
+    var v = String(hex).trim();
+    var sh = /^#([0-9a-f]{3})$/i.exec(v);
+    if (sh) v = '#' + sh[1].replace(/./g, function (c) { return c + c; });
+    var m = /^#([0-9a-f]{6})$/i.exec(v);
+    if (!m) return 1;   // unknown colour -> assume a light stage, dark text
     var ch = [0, 2, 4].map(function (i) {
       var v = parseInt(m[1].substr(i, 2), 16) / 255;
       return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
@@ -209,9 +225,9 @@
       '  border-radius:6px;background-color:var(--bg);background-image:var(--bg-img);',
       '  background-size:var(--bg-size);background-position:var(--bg-pos);',
       '  background-repeat:no-repeat;font-family:var(--body-font);',
-      '  -webkit-font-smoothing:antialiased;perspective:1600px;user-select:none;}',
+      '  -webkit-font-smoothing:antialiased;perspective:1600px;user-select:none;-webkit-user-select:none;}',
 
-      '.vig{position:absolute;inset:0;pointer-events:none;z-index:1;',
+      '.vig{position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;z-index:1;',
       '  background:radial-gradient(120% 100% at 50% 42%,rgba(0,0,0,0) 40%,rgba(0,0,0,.38) 100%);}',
       '.stage.no-vig .vig{display:none;}',
 
@@ -222,35 +238,35 @@
       '  transition:transform var(--t-rise) cubic-bezier(.16,.9,.3,1.02),opacity 500ms ease;}',
       '.stage.intro .env{transform:translateY(0) rotate(0deg);opacity:1;}',
 
-      '.env-hit{position:absolute;inset:-2% -3%;z-index:40;cursor:pointer;border:0;background:none;',
+      '.env-hit{position:absolute;top:-2%;bottom:-2%;left:-3%;right:-3%;z-index:40;cursor:pointer;border:0;background:none;',
       '  border-radius:8px;outline-offset:6px;}',
       '.stage.opening .env-hit,.stage.opened .env-hit{cursor:default;pointer-events:none;}',
       '.env-hit:focus-visible{outline:2px solid var(--accent);}',
 
-      '.env-inner{position:absolute;inset:0;transform-style:preserve-3d;',
+      '.env-inner{position:absolute;top:0;right:0;bottom:0;left:0;transform-style:preserve-3d;',
       '  transition:transform var(--t-flip) cubic-bezier(.55,.02,.3,1);',
       '  filter:drop-shadow(0 12px 22px rgba(0,0,0,.30));}',
       '.stage.idle .env-inner{animation:breathe 3.6s ease-in-out 1.1s infinite;}',
       '.stage.flipping .env-inner{transform:rotateY(180deg);}',
       '@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.2%)}}',
 
-      '.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;',
+      '.face{position:absolute;top:0;right:0;bottom:0;left:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;',
       '  border-radius:3px;overflow:hidden;background:var(--env);}',
       '.face.back{transform:rotateY(180deg);}',
 
       /* ---------- envelope FRONT ---------- */
-      '.paper{position:absolute;inset:0;background:var(--env);',
+      '.paper{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);',
       '  background-image:linear-gradient(150deg,rgba(255,255,255,.75),rgba(0,0,0,.05) 62%),',
       '   radial-gradient(140% 120% at 15% 0%,rgba(255,255,255,.5),rgba(0,0,0,0) 55%);}',
-      '.edge{position:absolute;inset:0;border-radius:3px;pointer-events:none;',
+      '.edge{position:absolute;top:0;right:0;bottom:0;left:0;border-radius:3px;pointer-events:none;',
       '  box-shadow:inset 0 0 0 1px rgba(0,0,0,.10),inset 0 -14px 26px rgba(0,0,0,.07);}',
 
-      '.stamp{position:absolute;top:5.5%;right:6.5%;width:26%;aspect-ratio:.82;',
+      '.stamp{position:absolute;top:5.5%;right:6.5%;width:var(--stamp-w);height:var(--stamp-h);',
       '  background:var(--stamp-paper);padding:6%;display:flex;align-items:center;justify-content:center;',
       '  filter:drop-shadow(0 1px 2px rgba(0,0,0,.28));',
       '  -webkit-mask-image:var(--perf);mask-image:var(--perf);',
       '  -webkit-mask-size:100% 100%;mask-size:100% 100%;}',
-      '.stamp-frame{position:absolute;inset:8%;border:1px solid var(--stamp-accent);}',
+      '.stamp-frame{position:absolute;top:8%;right:8%;bottom:8%;left:8%;border:1px solid var(--stamp-accent);}',
       '.stamp-logo{position:relative;width:82%;height:62%;background-color:var(--stamp-ink);',
       '  -webkit-mask-image:var(--wordmark);mask-image:var(--wordmark);',
       '  -webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;',
@@ -258,7 +274,7 @@
       '.stamp-logo.img{background:none;-webkit-mask:none;mask:none;',
       '  background-image:var(--wordmark);background-size:contain;background-repeat:no-repeat;background-position:center;}',
 
-      '.postmark{position:absolute;top:7%;right:36%;width:30%;aspect-ratio:1;opacity:.30;',
+      '.postmark{position:absolute;top:7%;right:36%;width:var(--pm-d);height:var(--pm-d);opacity:.30;',
       '  transform:rotate(-11deg);pointer-events:none;}',
       '.postmark svg{width:100%;height:100%;}',
 
@@ -270,22 +286,23 @@
       '.rule{width:42%;height:1px;margin:calc(var(--w) * .022) auto 0;background:var(--name-c);opacity:.22;}',
 
       /* ---------- envelope BACK (static, used during the flip) ---------- */
-      '.back-panel{position:absolute;inset:0;background:var(--env);',
+      '.back-panel{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);',
       '  background-image:linear-gradient(200deg,rgba(255,255,255,.6),rgba(0,0,0,.06) 70%);}',
       '.seam{position:absolute;left:0;right:0;top:var(--throat-h);height:1px;background:rgba(0,0,0,.10);}',
       '.static-flap{position:absolute;left:0;right:0;top:0;height:var(--flap-h);}',
 
       /* flap surface, shared by static + live versions */
-      '.flap-face{position:absolute;inset:0;background:var(--env);',
+      '.flap-face{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);',
       '  background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(0,0,0,.08));',
       '  box-shadow:0 5px 12px rgba(0,0,0,.16);}',
-      '.flap-face.point{clip-path:polygon(0 0,100% 0,100% 52%,50% 100%,0 52%);}',
+      '.flap-face.point{-webkit-clip-path:polygon(0 0,100% 0,100% 52%,50% 100%,0 52%);',
+      '  clip-path:polygon(0 0,100% 0,100% 52%,50% 100%,0 52%);}',
       '.flap-face.straight{clip-path:polygon(0 0,100% 0,100% 100%,0 100%);}',
-      '.flap-lining{position:absolute;inset:0;background:var(--liner);',
+      '.flap-lining{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--liner);',
       '  background-image:linear-gradient(180deg,rgba(0,0,0,.22),rgba(255,255,255,.10));}',
 
-      '.seal{position:absolute;left:50%;top:calc(var(--flap-h) * 0.60);width:calc(var(--env-w) * .30 * var(--seal-s));',
-      '  aspect-ratio:1;transform:translate(-50%,-50%);z-index:3;pointer-events:none;',
+      '.seal{position:absolute;left:50%;top:calc(var(--flap-h) * 0.60);',
+      '  width:var(--seal-d);height:var(--seal-d);transform:translate(-50%,-50%);z-index:3;pointer-events:none;',
       '  background-color:var(--seal-c);-webkit-mask-image:var(--seal-img);mask-image:var(--seal-img);',
       '  -webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;',
       '  -webkit-mask-position:center;mask-position:center;',
@@ -294,7 +311,7 @@
       '  background-size:contain;background-repeat:no-repeat;background-position:center;}',
 
       /* ---------- live back stage (after the flip) ---------- */
-      '.backstage{position:absolute;inset:0;opacity:0;pointer-events:none;perspective:1100px;}',
+      '.backstage{position:absolute;top:0;right:0;bottom:0;left:0;opacity:0;pointer-events:none;perspective:1100px;}',
       '.stage.live .backstage{opacity:1;}',
       '.stage.live .env-inner{opacity:0;}',
 
@@ -313,12 +330,12 @@
       '  transform-style:preserve-3d;transform-origin:top center;transform:rotateX(0deg);',
       '  transition:transform var(--t-flap) cubic-bezier(.5,.05,.25,1);}',
       '.stage.flap-open .flap{transform:rotateX(-172deg);}',
-      '.flap .side{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;}',
+      '.flap .side{position:absolute;top:0;right:0;bottom:0;left:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;}',
       '.flap .side.in{transform:rotateY(180deg);}',
 
       /* ---------- the card ---------- */
       /* the card lives inside .env so it can sit in the throat, behind the pocket */
-      '.card{position:absolute;left:50%;top:50%;width:var(--card-w);aspect-ratio:var(--card-ar);',
+      '.card{position:absolute;left:50%;top:50%;width:var(--card-w);height:var(--card-h);',
       '  z-index:4;transform-origin:50% 50%;',
       '  transform:translate(-50%,calc(-50% + var(--card-tuck)));',
       '  box-shadow:0 8px 20px rgba(0,0,0,.32);border-radius:var(--card-r);overflow:hidden;background:#fff;',
@@ -364,7 +381,7 @@
       '.replay:focus-visible{outline:2px solid #fff;outline-offset:2px;}',
       '.replay svg{width:1.05em;height:1.05em;fill:currentColor;}',
 
-      '.err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;',
+      '.err{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center;',
       '  color:#fff;font-family:system-ui,sans-serif;font-size:14px;text-align:center;padding:24px;z-index:50;}',
 
       '@media (prefers-reduced-motion: reduce){',
@@ -393,13 +410,14 @@
 
   function postmarkSvg(text) {
     var t = escapeHtml(text || '');
-    return '<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    return '<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" ' +
+      'xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">' +
       '<defs><path id="pmArc" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0"/></defs>' +
       '<circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" stroke-width="5"/>' +
       '<circle cx="100" cy="100" r="72" fill="none" stroke="currentColor" stroke-width="3"/>' +
       '<text font-family="Oswald,\'Arial Narrow\',sans-serif" font-weight="500" ' +
       'font-size="17" letter-spacing="2.4" fill="currentColor">' +
-      '<textPath href="#pmArc" startOffset="50%" text-anchor="middle">' + t + '</textPath></text>' +
+      '<textPath href="#pmArc" xlink:href="#pmArc" startOffset="50%" text-anchor="middle">' + t + '</textPath></text>' +
       '<g stroke="currentColor" stroke-width="4" stroke-linecap="round">' +
       '<path d="M52 92h96M52 108h96"/></g>' +
       '</svg>';
@@ -418,9 +436,14 @@
     loadFont(cfg.fallbackFontUrl);  // free stand-ins for the licensed faces
     loadFont(cfg.nameFontUrl);
 
-    // reuse an existing shadow root — attachShadow throws if called twice
-    var root = this.root = host.shadowRoot ||
-      (host.attachShadow ? host.attachShadow({ mode: 'open' }) : host);
+    // Without shadow DOM the stylesheet would leak into the host page and
+    // reset its box model, so refuse to render instead.
+    if (!host.shadowRoot && !host.attachShadow) {
+      host.textContent = '';
+      this.stage = null;
+      return;
+    }
+    var root = this.root = host.shadowRoot || host.attachShadow({ mode: 'open' });
     root.innerHTML = '';
 
     var style = document.createElement('style');
@@ -435,6 +458,7 @@
       wrap.className = 'stage';
       wrap.appendChild(e);
       root.appendChild(wrap);
+      this.stage = null;   // reset()/start()/open() all no-op from here
       return;
     }
 
@@ -507,8 +531,8 @@
 
       '<div class="prompt">' + escapeHtml(cfg.prompt) + '</div>',
 
-      '<div class="cta">' + (cfg.rsvpUrl
-        ? '<a href="' + escapeHtml(cfg.rsvpUrl) + '" target="' + escapeHtml(cfg.rsvpTarget) +
+      '<div class="cta">' + (safeUrl(cfg.rsvpUrl)
+        ? '<a href="' + escapeHtml(safeUrl(cfg.rsvpUrl)) + '" target="' + escapeHtml(cfg.rsvpTarget) +
           '" rel="noopener noreferrer">' + escapeHtml(cfg.rsvpText) + '</a>'
         : '') + '</div>',
 
@@ -570,7 +594,7 @@
     var self = this;
     stage.querySelector('.env-hit').addEventListener('click', function () { self.open(); });
     var rp = stage.querySelector('.replay');
-    if (rp) rp.addEventListener('click', function () { self.reset(); self.start(); });
+    if (rp) rp.addEventListener('click', function () { self.reset(); self.start(true); });
 
     /* card aspect: detect from the image unless pinned */
     if (cfg.cardAspect > 0) {
@@ -625,8 +649,14 @@
     var flapH = envH * cfg.flapDepth;
     s.setProperty('--flap-h', flapH.toFixed(1) + 'px');
     s.setProperty('--throat-h', (flapH * (cfg.flapShape === 'straight' ? 1 : 0.52)).toFixed(1) + 'px');
-    s.setProperty('--card-w', cardW + 'px');
+    s.setProperty('--card-w', cardW.toFixed(1) + 'px');
+    s.setProperty('--card-h', cardH.toFixed(1) + 'px');
     s.setProperty('--card-ar', String(ar));
+    var stampW = envW * 0.26;
+    s.setProperty('--stamp-w', stampW.toFixed(1) + 'px');
+    s.setProperty('--stamp-h', (stampW / 0.82).toFixed(1) + 'px');
+    s.setProperty('--pm-d', (envW * 0.30).toFixed(1) + 'px');
+    s.setProperty('--seal-d', (envW * 0.30 * cfg.sealScale).toFixed(1) + 'px');
     s.setProperty('--card-tuck', tuck.toFixed(1) + 'px');
     s.setProperty('--card-lift', lift + 'px');
     s.setProperty('--card-final-s', finalS.toFixed(4));
@@ -646,7 +676,9 @@
   };
 
   Invite.prototype.at = function (ms, fn) {
-    this.timers.push(setTimeout(fn, ms));
+    // the stylesheet already collapses transitions; collapse the schedule too
+    var scale = prefersReducedMotion() ? 0.02 : 1;
+    this.timers.push(setTimeout(fn, Math.round(ms * scale)));
   };
 
   Invite.prototype.clearTimers = function () {
@@ -655,6 +687,7 @@
   };
 
   Invite.prototype.reset = function () {
+    if (!this.stage) return;
     this.clearTimers();
     this.stage.className = 'stage' + (this.cfg.vignette ? '' : ' no-vig');
     this.state = 'init';
@@ -662,11 +695,12 @@
     void this.stage.offsetWidth;
   };
 
-  Invite.prototype.start = function () {
+  Invite.prototype.start = function (force) {
+    if (!this.stage) return;
     var self = this, cfg = this.cfg;
     this.applyVars();
 
-    if (cfg.openOnce && this._sessionOpened()) {
+    if (!force && cfg.openOnce && this._sessionOpened()) {
       this.stage.classList.add('intro', 'live', 'flap-open', 'card-out', 'card-final', 'done', 'opened');
       this.state = 'done';
       return;
@@ -681,7 +715,7 @@
   };
 
   Invite.prototype.open = function () {
-    if (this.state !== 'idle') return;
+    if (!this.stage || this.state !== 'idle') return;
     var self = this;
     this.state = 'opening';
     this.stage.classList.remove('idle');
@@ -723,7 +757,9 @@
     this.clearTimers();
     if (this.ro) this.ro.disconnect();
     if (this._onResize) global.removeEventListener('resize', this._onResize);
-    if (this.host.shadowRoot) this.host.shadowRoot.innerHTML = '';
+    if (this.root && 'innerHTML' in this.root) this.root.innerHTML = '';
+    this.stage = null;
+    try { delete this.host.__trplInvite; } catch (e) { this.host.__trplInvite = null; }
   };
 
   /* ------------------------------------------------------------------ *

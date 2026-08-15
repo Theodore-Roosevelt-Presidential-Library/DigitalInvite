@@ -135,7 +135,7 @@
       <summary>Invitation &amp; RSVP</summary>
       <div class="fields">
         <label><span class="lb">Invitation card image URL</span>
-          <input type="text" data-k="cardImage" value="demo/sample-invitation.jpg">
+          <input type="text" data-k="cardImage" value="https://rsvp.labs.trlibrary.com/demo/sample-invitation.jpg">
           <span class="hint">Portrait artwork works best (5:7 or 2:3). Must be publicly reachable —
             upload it to this repo or the DAM and paste the full https:// URL.</span>
         </label>
@@ -469,7 +469,8 @@
     document.querySelectorAll('.preset').forEach(function(el){
       var p = PRESETS[+el.dataset.i];
       var same = ['backgroundColor','envelopeColor','linerColor','sealColor','accentColor']
-        .every(function(k){ return String(cur[k]).toUpperCase() === p[k].toUpperCase(); });
+        .every(function(k){ return String(cur[k]).toUpperCase() === p[k].toUpperCase(); })
+        && !!cur.vignette === !!p.vignette;
       el.setAttribute('aria-pressed', same ? 'true' : 'false');
     });
   }
@@ -479,14 +480,18 @@
     var cfg = {};
     form.querySelectorAll('[data-k]').forEach(function(el){
       var v = (el.type === 'checkbox') ? el.checked : el.value;
-      if (el.type === 'number') v = parseFloat(v);
+      if (el.type === 'number'){
+        v = parseFloat(v);
+        if (isNaN(v)) v = DEF[el.dataset.k];   // cleared field -> default
+      }
       cfg[el.dataset.k] = v;
     });
     var f = document.getElementById('fontPick').value;
     cfg.nameFont    = "'" + f + "', 'Snell Roundhand', 'Apple Chancery', cursive";
     cfg.nameFontUrl = FONT_URL[f];
-    // the stamp frame tracks the envelope unless a preset set it
-    if (!cfg.stampAccent) cfg.stampAccent = DEF.stampAccent;
+    // the stamp's hairline frame tracks the envelope paper
+    cfg.stampAccent = (cfg.envelopeColor || '').toUpperCase() === '#FFFFFF'
+      ? '#D1CCBD' : cfg.envelopeColor;
     return cfg;
   }
 
@@ -571,7 +576,8 @@
         '<div id="invite"></div>\n' +
         '<script src="' + HOST + '/dist/trpl-invite.js"><' + '/script>\n' +
         '<script>\n' +
-        '  TRPLInvite.create("#invite", ' + JSON.stringify(o, null, 2).replace(/\n/g,'\n  ') + ');\n' +
+        '  TRPLInvite.create("#invite", ' +
+          JSON.stringify(o, null, 2).replace(/\n/g,'\n  ').replace(/</g,'\\u003c') + ');\n' +
         '<' + '/script>';
     }
   }
@@ -586,13 +592,23 @@
   });
 
   document.getElementById('copyBtn').addEventListener('click', function(){
+    var n = document.getElementById('copied');
+    function done(ok){
+      n.textContent = ok ? 'Copied.' : 'Press Ctrl/Cmd-C to copy.';
+      setTimeout(function(){ n.textContent = ''; }, 2500);
+    }
     out.select();
-    navigator.clipboard.writeText(out.value).then(function(){
-      var n = document.getElementById('copied');
-      n.textContent = 'Copied.';
-      setTimeout(function(){ n.textContent = ''; }, 2000);
-    });
+    out.setSelectionRange(0, out.value.length);
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(out.value).then(function(){ done(true); },
+                                                    function(){ done(legacyCopy()); });
+    } else {
+      done(legacyCopy());
+    }
   });
+  function legacyCopy(){
+    try { return document.execCommand('copy'); } catch(e){ return false; }
+  }
 
   document.getElementById('replayBtn').addEventListener('click', render);
   document.getElementById('resetBtn').addEventListener('click', function(){
