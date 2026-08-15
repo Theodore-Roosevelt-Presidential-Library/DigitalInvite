@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TRPL Digital Invite — Embed Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Tangerine:wght@700&family=Parisienne&family=Dancing+Script:wght@600&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* TRPL brand palette */
+    --dark-gray:#25282A; --white:#FFFFFF; --sand:#D1CCBD;
+    --deep-orange:#E7805D; --sunset-orange:#FC924E; --sunset-pink:#F36079;
+    --sunset-yellow:#F9D635; --spring-green:#87BB41; --bright-forest:#8FC895;
+    --dark-forest:#1B4532; --night-sky:#092A4D; --gray-sky:#99ADC5;
+
+    --ink:var(--dark-gray); --panel:#F5F3EE; --line:#DCD7CC; --muted:#6F6A61;
+    --display:'Oswald','Arial Narrow',sans-serif;
+    --body:Georgia,'Iowan Old Style',serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#EDEAE3;color:var(--ink);
+       font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}
+
+  header{background:var(--dark-gray);color:#fff;padding:20px 28px;
+         display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}
+  header h1{font-family:var(--display);font-size:19px;letter-spacing:.14em;
+            text-transform:uppercase;font-weight:600;margin:0;}
+  header span{font-size:13px;opacity:.6;}
+  header a{color:var(--sunset-orange);font-size:13px;margin-left:auto;text-decoration:none;}
+  header a:hover{text-decoration:underline;}
+
+  .layout{display:grid;grid-template-columns:minmax(360px,440px) 1fr;}
+  @media (max-width:960px){.layout{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border-right:1px solid var(--line);padding:0 0 60px;
+         max-height:calc(100vh - 60px);overflow-y:auto;position:sticky;top:0;}
+  @media (max-width:960px){.panel{position:static;max-height:none;border-right:0;
+         border-bottom:1px solid var(--line);}}
+
+  details{border-bottom:1px solid var(--line);}
+  summary{cursor:pointer;padding:14px 22px;font-family:var(--display);font-weight:600;
+          font-size:14px;letter-spacing:.12em;text-transform:uppercase;list-style:none;
+          display:flex;align-items:center;justify-content:space-between;}
+  summary::-webkit-details-marker{display:none;}
+  summary::after{content:"+";font-weight:400;font-size:18px;color:var(--muted);}
+  details[open] summary::after{content:"–";}
+  .fields{padding:2px 22px 22px;}
+
+  label{display:block;margin:0 0 15px;}
+  label .lb{display:block;font-size:12px;font-weight:700;letter-spacing:.03em;margin-bottom:5px;}
+  .hint{display:block;font-size:11.5px;color:var(--muted);font-weight:400;margin-top:5px;line-height:1.45;}
+  .hint code{background:#e4e0d6;padding:1px 4px;border-radius:2px;font-size:11px;}
+  input[type=text],input[type=url],input[type=number],select,textarea{
+    width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;
+    background:#fff;font:inherit;font-size:13px;color:var(--ink);}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--sunset-orange);
+    outline-offset:-1px;border-color:transparent;}
+
+  .colorrow{display:flex;gap:8px;align-items:center;}
+  .colorrow input[type=color]{width:38px;height:34px;padding:0;border:1px solid var(--line);
+    border-radius:4px;background:#fff;cursor:pointer;flex:0 0 auto;}
+  .colorrow input[type=text]{flex:1;font-family:ui-monospace,Menlo,monospace;text-transform:uppercase;}
+
+  .swatches{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap;}
+  .swatches button{width:24px;height:24px;border-radius:50%;border:1px solid rgba(0,0,0,.2);
+    cursor:pointer;padding:0;}
+  .swatches button:hover{transform:scale(1.14);}
+  .swatches button[aria-pressed=true]{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--ink);}
+
+  .checkrow{display:flex;align-items:center;gap:8px;margin-bottom:15px;font-size:13px;}
+  .checkrow input{width:16px;height:16px;}
+
+  /* --- brand presets --- */
+  .presets{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .preset{border:1px solid var(--line);background:#fff;border-radius:5px;padding:0;
+          cursor:pointer;overflow:hidden;text-align:left;}
+  .preset:hover{border-color:var(--ink);}
+  .preset[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset;}
+  .preset .strip{display:flex;height:34px;}
+  .preset .strip i{flex:1;}
+  .preset .nm{display:block;padding:7px 9px;font-size:11.5px;font-weight:700;
+              letter-spacing:.04em;text-transform:uppercase;font-family:var(--display);}
+
+  .preview{padding:24px 28px 70px;}
+  h2{font-family:var(--display);font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+     color:var(--muted);margin:0 0 12px;font-weight:600;}
+  .pvbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .pvbar input{width:200px;padding:7px 10px;border:1px solid var(--line);border-radius:4px;font-size:13px;}
+  .btn{border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:4px;
+       padding:8px 15px;font-family:var(--display);font-size:13px;letter-spacing:.08em;
+       text-transform:uppercase;cursor:pointer;}
+  .btn.ghost{background:#fff;color:var(--ink);}
+  .btn:hover{filter:brightness(1.2);}
+
+  #mountWrap{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px;}
+
+  .code{margin-top:32px;}
+  .code textarea{width:100%;min-height:240px;font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:12px;line-height:1.55;padding:14px;border:1px solid var(--line);border-radius:6px;
+    background:var(--dark-gray);color:#E6E2D8;resize:vertical;}
+  .tabs{display:flex;gap:6px;margin-bottom:10px;}
+  .tabs button{border:1px solid var(--line);background:#fff;border-radius:4px;padding:7px 13px;
+    font-family:var(--display);font-size:12px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;}
+  .tabs button[aria-selected=true]{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .note{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.65;}
+  .note code{background:#e4e0d6;padding:1px 5px;border-radius:2px;}
+  .flag{background:#FDF0E6;border-left:3px solid var(--sunset-orange);padding:9px 11px;
+        font-size:11.5px;line-height:1.5;color:#5a4634;margin:0 0 14px;border-radius:0 3px 3px 0;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TRPL Digital Invite</h1>
+  <span>On-brand envelope invitation builder</span>
+  <a href="demo/">View demo →</a>
+</header>
+
+<div class="layout">
+
+  <form class="panel" id="form">
+
+    <details open>
+      <summary>Brand combination</summary>
+      <div class="fields">
+        <div class="presets" id="presets"></div>
+        <span class="hint">Approved pairings from the TRPL Brand Identity System. Pick one, then
+          fine-tune below — every colour picker is loaded with the brand palette.</span>
+      </div>
+    </details>
+
+    <details open>
+      <summary>Invitation &amp; RSVP</summary>
+      <div class="fields">
+        <label><span class="lb">Invitation card image URL</span>
+          <input type="text" data-k="cardImage" value="demo/sample-invitation.jpg">
+          <span class="hint">Portrait artwork works best (5:7 or 2:3). Must be publicly reachable —
+            upload it to this repo or the DAM and paste the full https:// URL.</span>
+        </label>
+        <label><span class="lb">Card alt text</span>
+          <input type="text" data-k="cardAlt" value="Invitation">
+        </label>
+        <label><span class="lb">RSVP link</span>
+          <input type="text" data-k="rsvpUrl" value="https://www.trlibrary.com/">
+        </label>
+        <label><span class="lb">RSVP button text</span>
+          <input type="text" data-k="rsvpText" value="RSVP">
+        </label>
+        <label><span class="lb">Open RSVP link in</span>
+          <select data-k="rsvpTarget">
+            <option value="_blank">New tab</option>
+            <option value="_self">Same tab</option>
+          </select>
+        </label>
+      </div>
+    </details>
+
+    <details>
+      <summary>Recipient name</summary>
+      <div class="fields">
+        <label><span class="lb">Query-string parameter</span>
+          <input type="text" data-k="nameParam" value="name">
+          <span class="hint">Read from the page URL, e.g. <code>?name=Jane%20Doe</code>. Append it to
+            each recipient's link in a mail merge and their name is lettered onto the envelope.</span>
+        </label>
+        <label><span class="lb">Fallback name</span>
+          <input type="text" data-k="nameFallback" value="Friend of the Library">
+          <span class="hint">Shown when no name is in the URL.</span>
+        </label>
+        <p class="flag"><strong>Off-system by design.</strong> A calligraphic address is what sells the
+          hand-addressed envelope; the brand type system has no script face. Everything else in this
+          embed uses Dharma Gothic E and ITC Clearface.</p>
+        <label><span class="lb">Script font</span>
+          <select id="fontPick">
+            <option value="Great Vibes">Great Vibes (formal calligraphy)</option>
+            <option value="Tangerine">Tangerine (fine copperplate)</option>
+            <option value="Parisienne">Parisienne (relaxed script)</option>
+            <option value="Dancing Script">Dancing Script (casual)</option>
+          </select>
+        </label>
+        <label><span class="lb">Name ink colour</span>
+          <span class="colorrow"><input type="color" data-c="nameColor" value="#25282A"><input type="text" data-k="nameColor" value="#25282A"></span>
+          <span class="swatches" data-for="nameColor"></span>
+        </label>
+        <label><span class="lb">Postmark text</span>
+          <input type="text" data-k="postmark" value="MEDORA · NORTH DAKOTA">
+        </label>
+      </div>
+    </details>
+
+    <details>
+      <summary>Brand fonts</summary>
+      <div class="fields">
+        <label><span class="lb">Adobe Fonts kit URL</span>
+          <input type="text" data-k="fontKitUrl" value="" placeholder="https://use.typekit.net/xxxxxxx.css">
+          <span class="hint">Dharma Gothic E, ITC Clearface and Frutiger Next are licensed, so they
+            can't be bundled here. Paste the Library's Adobe Fonts kit URL (the same one
+            trlibrary.com loads) and the embed renders the real faces. Leave it blank and the
+            fallbacks below stand in.</span>
+        </label>
+        <label><span class="lb">Display font — buttons, labels, postmark</span>
+          <input type="text" data-k="displayFont" value="'dharma-gothic-e','Oswald','Haettenschweiler','Arial Narrow',sans-serif">
+          <span class="hint">Dharma Gothic E, all caps, calls to action and titling only. Oswald stands in.</span>
+        </label>
+        <label><span class="lb">Body font — prompt copy</span>
+          <input type="text" data-k="bodyFont" value="'itc-clearface',Georgia,'Iowan Old Style','Times New Roman',serif">
+          <span class="hint">ITC Clearface for body copy. Georgia stands in.</span>
+        </label>
+      </div>
+    </details>
+
+    <details>
+      <summary>Background</summary>
+      <div class="fields">
+        <label><span class="lb">Background colour</span>
+          <span class="colorrow"><input type="color" data-c="backgroundColor" value="#25282A"><input type="text" data-k="backgroundColor" value="#25282A"></span>
+          <span class="swatches" data-for="backgroundColor"></span>
+        </label>
+        <label><span class="lb">Background image URL (optional)</span>
+          <input type="text" data-k="backgroundImage" value="">
+          <span class="hint">A Badlands photograph works well. Sits above the colour.</span>
+        </label>
+        <label><span class="lb">Background fit</span>
+          <select data-k="backgroundSize">
+            <option value="cover">Cover</option>
+            <option value="contain">Contain</option>
+            <option value="auto">Actual size</option>
+          </select>
+        </label>
+        <div class="checkrow"><input type="checkbox" data-k="vignette" checked id="vig"><label for="vig" style="margin:0">Soft vignette (turn off on light backgrounds)</label></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Envelope</summary>
+      <div class="fields">
+        <label><span class="lb">Envelope paper colour</span>
+          <span class="colorrow"><input type="color" data-c="envelopeColor" value="#D1CCBD"><input type="text" data-k="envelopeColor" value="#D1CCBD"></span>
+          <span class="swatches" data-for="envelopeColor"></span>
+        </label>
+        <label><span class="lb">Envelope liner colour</span>
+          <span class="colorrow"><input type="color" data-c="linerColor" value="#E7805D"><input type="text" data-k="linerColor" value="#E7805D"></span>
+          <span class="swatches" data-for="linerColor"></span>
+        </label>
+        <label><span class="lb">Flap shape</span>
+          <select data-k="flapShape">
+            <option value="point">Pointed (formal)</option>
+            <option value="straight">Straight (modern)</option>
+          </select>
+        </label>
+        <label><span class="lb">Envelope shape (width ÷ height)</span>
+          <input type="number" step="0.01" min="0.5" max="1.8" data-k="envelopeAspect" value="0.72">
+          <span class="hint">0.72 = portrait invitation envelope. ~1.40 gives a landscape envelope.</span>
+        </label>
+        <label><span class="lb">Envelope size</span>
+          <input type="number" step="0.05" min="0.6" max="1.4" data-k="envelopeScale" value="1">
+        </label>
+      </div>
+    </details>
+
+    <details>
+      <summary>Stamp &amp; brand seal</summary>
+      <div class="fields">
+        <label><span class="lb">Elkhorn brand seal colour <span style="font-weight:400;color:var(--muted)">(back flap)</span></span>
+          <span class="colorrow"><input type="color" data-c="sealColor" value="#FC924E"><input type="text" data-k="sealColor" value="#FC924E"></span>
+          <span class="swatches" data-for="sealColor"></span>
+          <span class="hint">The brand mark is bundled with the embed and recoloured live — nothing to upload.</span>
+        </label>
+        <label><span class="lb">Seal size</span>
+          <input type="number" step="0.05" min="0.5" max="1.6" data-k="sealScale" value="1">
+        </label>
+        <label><span class="lb">Postage stamp paper</span>
+          <span class="colorrow"><input type="color" data-c="stampPaper" value="#FFFFFF"><input type="text" data-k="stampPaper" value="#FFFFFF"></span>
+          <span class="swatches" data-for="stampPaper"></span>
+        </label>
+        <label><span class="lb">TRPL wordmark ink</span>
+          <span class="colorrow"><input type="color" data-c="stampInk" value="#25282A"><input type="text" data-k="stampInk" value="#25282A"></span>
+          <span class="swatches" data-for="stampInk"></span>
+        </label>
+      </div>
+    </details>
+
+    <details>
+      <summary>Buttons &amp; behaviour</summary>
+      <div class="fields">
+        <label><span class="lb">Prompt text</span>
+          <input type="text" data-k="prompt" value="Click the envelope to open">
+        </label>
+        <label><span class="lb">Button colour</span>
+          <span class="colorrow"><input type="color" data-c="accentColor" value="#FC924E"><input type="text" data-k="accentColor" value="#FC924E"></span>
+          <span class="swatches" data-for="accentColor"></span>
+        </label>
+        <label><span class="lb">Button text colour</span>
+          <span class="colorrow"><input type="color" data-c="accentTextColor" value="#25282A"><input type="text" data-k="accentTextColor" value="#25282A"></span>
+          <span class="swatches" data-for="accentTextColor"></span>
+          <span class="hint" id="contrast"></span>
+        </label>
+        <div class="checkrow"><input type="checkbox" data-k="replay" checked id="rp"><label for="rp" style="margin:0">Show replay button (lower left)</label></div>
+        <label><span class="lb">Auto-open after (ms)</span>
+          <input type="number" step="250" min="0" data-k="autoOpen" value="0">
+          <span class="hint">0 waits for a click. 2500 opens on its own after a moment.</span>
+        </label>
+        <label><span class="lb">Frame shape (width / height)</span>
+          <input type="text" data-k="aspect" value="4 / 5">
+        </label>
+        <label><span class="lb">Maximum width</span>
+          <input type="text" data-k="maxWidth" value="620px">
+        </label>
+      </div>
+    </details>
+  </form>
+
+  <div class="preview">
+    <h2>Live preview</h2>
+    <div class="pvbar">
+      <input type="text" id="pvName" placeholder="Preview a recipient name" value="Theodore Roosevelt">
+      <button type="button" class="btn ghost" id="replayBtn">Replay animation</button>
+      <button type="button" class="btn ghost" id="resetBtn">Reset all settings</button>
+    </div>
+    <div id="mountWrap"><div id="mount"></div></div>
+
+    <div class="code">
+      <h2>Embed code</h2>
+      <div class="tabs">
+        <button type="button" id="tabHtml" aria-selected="true">HTML snippet</button>
+        <button type="button" id="tabJs" aria-selected="false">JavaScript API</button>
+      </div>
+      <textarea id="out" readonly spellcheck="false"></textarea>
+      <div class="pvbar" style="margin-top:10px">
+        <button type="button" class="btn" id="copyBtn">Copy embed code</button>
+        <span id="copied" style="font-size:12px;color:var(--muted);"></span>
+      </div>
+      <p class="note">
+        Paste the snippet wherever the invitation should appear. Append
+        <code>?name=Jane%20Doe</code> to the page URL sent to each guest and their name is
+        hand-lettered onto the envelope. The embed loads its own styles in a shadow root, so it
+        will neither inherit nor disturb the host page's CSS.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script src="dist/trpl-invite.js"></script>
+<script>
+(function(){
+  var HOST = 'https://rsvp.labs.trlibrary.com';
+
+  /* ---------- TRPL Brand Identity System ---------- */
+  var PALETTE = [
+    { name:'Dark Gray',     hex:'#25282A', pantone:'426C'  },
+    { name:'White',         hex:'#FFFFFF', pantone:''      },
+    { name:'Sand',          hex:'#D1CCBD', pantone:'7534C' },
+    { name:'Deep Orange',   hex:'#E7805D', pantone:'2022C' },
+    { name:'Sunset Orange', hex:'#FC924E', pantone:'2024C' },
+    { name:'Sunset Pink',   hex:'#F36079', pantone:'709C'  },
+    { name:'Sunset Yellow', hex:'#F9D635', pantone:'128C'  },
+    { name:'Spring Green',  hex:'#87BB41', pantone:'368C'  },
+    { name:'Bright Forest', hex:'#8FC895', pantone:'2255C' },
+    { name:'Dark Forest',   hex:'#1B4532', pantone:'7484C' },
+    { name:'Night Sky',     hex:'#092A4D', pantone:'654C'  },
+    { name:'Gray Sky',      hex:'#99ADC5', pantone:'536C'  }
+  ];
+
+  /* Approved combinations. Text colours follow the brand guide's
+     headline-on-colour pairings, so contrast is already vetted. */
+  var PRESETS = [
+    { name:'Badlands Night', vignette:true,
+      backgroundColor:'#25282A', envelopeColor:'#D1CCBD', linerColor:'#E7805D',
+      sealColor:'#FC924E', accentColor:'#FC924E', accentTextColor:'#25282A',
+      nameColor:'#25282A', stampInk:'#25282A', stampPaper:'#FFFFFF' },
+
+    { name:'Elkhorn', vignette:true,
+      backgroundColor:'#1B4532', envelopeColor:'#FFFFFF', linerColor:'#1B4532',
+      sealColor:'#87BB41', accentColor:'#87BB41', accentTextColor:'#25282A',
+      nameColor:'#1B4532', stampInk:'#1B4532', stampPaper:'#FFFFFF' },
+
+    { name:'Night Sky', vignette:true,
+      backgroundColor:'#092A4D', envelopeColor:'#D1CCBD', linerColor:'#092A4D',
+      sealColor:'#F9D635', accentColor:'#F9D635', accentTextColor:'#092A4D',
+      nameColor:'#092A4D', stampInk:'#092A4D', stampPaper:'#FFFFFF' },
+
+    { name:'Sunset', vignette:false,
+      backgroundColor:'#E7805D', envelopeColor:'#FFFFFF', linerColor:'#25282A',
+      sealColor:'#25282A', accentColor:'#25282A', accentTextColor:'#FFFFFF',
+      nameColor:'#25282A', stampInk:'#25282A', stampPaper:'#FFFFFF' },
+
+    { name:'Gray Sky', vignette:false,
+      backgroundColor:'#99ADC5', envelopeColor:'#FFFFFF', linerColor:'#092A4D',
+      sealColor:'#092A4D', accentColor:'#092A4D', accentTextColor:'#FFFFFF',
+      nameColor:'#092A4D', stampInk:'#092A4D', stampPaper:'#FFFFFF' },
+
+    { name:'Sand & Forest', vignette:false,
+      backgroundColor:'#D1CCBD', envelopeColor:'#FFFFFF', linerColor:'#1B4532',
+      sealColor:'#1B4532', accentColor:'#1B4532', accentTextColor:'#FFFFFF',
+      nameColor:'#1B4532', stampInk:'#1B4532', stampPaper:'#FFFFFF' },
+
+    { name:'Prairie Dusk', vignette:true,
+      backgroundColor:'#25282A', envelopeColor:'#FFFFFF', linerColor:'#F36079',
+      sealColor:'#F36079', accentColor:'#F36079', accentTextColor:'#25282A',
+      nameColor:'#25282A', stampInk:'#25282A', stampPaper:'#FFFFFF' },
+
+    { name:'Bright Forest', vignette:false,
+      backgroundColor:'#8FC895', envelopeColor:'#FFFFFF', linerColor:'#1B4532',
+      sealColor:'#1B4532', accentColor:'#25282A', accentTextColor:'#FFFFFF',
+      nameColor:'#1B4532', stampInk:'#1B4532', stampPaper:'#FFFFFF' }
+  ];
+
+  var FONT_URL = {
+    'Great Vibes':    'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap',
+    'Tangerine':      'https://fonts.googleapis.com/css2?family=Tangerine:wght@700&display=swap',
+    'Parisienne':     'https://fonts.googleapis.com/css2?family=Parisienne&display=swap',
+    'Dancing Script': 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&display=swap'
+  };
+
+  var DEF   = TRPLInvite.defaults;
+  var form  = document.getElementById('form');
+  var out   = document.getElementById('out');
+  var mount = document.getElementById('mount');
+  var mode = 'html', inst = null, rebuildTimer = null;
+
+  /* ---------- build the palette swatch rows ---------- */
+  form.querySelectorAll('.swatches').forEach(function(row){
+    row.innerHTML = PALETTE.map(function(c){
+      return '<button type="button" data-v="' + c.hex + '" title="' + c.name +
+             (c.pantone ? ' — Pantone ' + c.pantone : '') + '" ' +
+             'style="background:' + c.hex + '"></button>';
+    }).join('');
+    row.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      setColor(row.dataset.for, b.dataset.v);
+      schedule();
+    });
+  });
+
+  /* ---------- build the preset cards ---------- */
+  document.getElementById('presets').innerHTML = PRESETS.map(function(p,i){
+    var strip = [p.backgroundColor,p.envelopeColor,p.linerColor,p.sealColor,p.accentColor]
+      .map(function(c){ return '<i style="background:'+c+'"></i>'; }).join('');
+    return '<button type="button" class="preset" data-i="'+i+'">' +
+           '<span class="strip">'+strip+'</span><span class="nm">'+p.name+'</span></button>';
+  }).join('');
+
+  document.getElementById('presets').addEventListener('click', function(e){
+    var b = e.target.closest('.preset'); if(!b) return;
+    applyPreset(PRESETS[+b.dataset.i]);
+    markActivePreset();
+    render();
+  });
+
+  function setColor(key, hex){
+    var t = form.querySelector('input[type=text][data-k="'+key+'"]');
+    var p = form.querySelector('input[data-c="'+key+'"]');
+    if (t) t.value = hex;
+    if (p) p.value = hex;
+  }
+
+  function applyPreset(p){
+    Object.keys(p).forEach(function(k){
+      if (k === 'name') return;
+      if (k === 'vignette'){ document.getElementById('vig').checked = p.vignette; return; }
+      setColor(k, p[k]);
+    });
+  }
+
+  function markActivePreset(){
+    var cur = collect();
+    document.querySelectorAll('.preset').forEach(function(el){
+      var p = PRESETS[+el.dataset.i];
+      var same = ['backgroundColor','envelopeColor','linerColor','sealColor','accentColor']
+        .every(function(k){ return String(cur[k]).toUpperCase() === p[k].toUpperCase(); });
+      el.setAttribute('aria-pressed', same ? 'true' : 'false');
+    });
+  }
+
+  /* ---------- config ---------- */
+  function collect(){
+    var cfg = {};
+    form.querySelectorAll('[data-k]').forEach(function(el){
+      var v = (el.type === 'checkbox') ? el.checked : el.value;
+      if (el.type === 'number') v = parseFloat(v);
+      cfg[el.dataset.k] = v;
+    });
+    var f = document.getElementById('fontPick').value;
+    cfg.nameFont    = "'" + f + "', 'Snell Roundhand', 'Apple Chancery', cursive";
+    cfg.nameFontUrl = FONT_URL[f];
+    // the stamp frame tracks the envelope unless a preset set it
+    if (!cfg.stampAccent) cfg.stampAccent = DEF.stampAccent;
+    return cfg;
+  }
+
+  form.querySelectorAll('input[data-c]').forEach(function(picker){
+    var text = form.querySelector('input[type=text][data-k="'+picker.dataset.c+'"]');
+    picker.addEventListener('input', function(){ text.value = picker.value.toUpperCase(); schedule(); });
+    text.addEventListener('input', function(){
+      if (/^#[0-9a-f]{6}$/i.test(text.value)) picker.value = text.value;
+      schedule();
+    });
+  });
+
+  form.addEventListener('input', schedule);
+  form.addEventListener('change', schedule);
+  document.getElementById('pvName').addEventListener('input', schedule);
+
+  function schedule(){ clearTimeout(rebuildTimer); rebuildTimer = setTimeout(render, 260); }
+
+  function render(){
+    var cfg = collect();
+    var preview = Object.assign({}, cfg, { name: document.getElementById('pvName').value || '' });
+    if (inst) inst.destroy();
+    mount.innerHTML = '';
+    inst = TRPLInvite.create(mount, preview);
+    markActivePreset();
+    showContrast(cfg);
+    writeCode(cfg);
+  }
+
+  /* ---------- WCAG contrast readout on the button pair ---------- */
+  function lum(hex){
+    var c = [1,3,5].map(function(i){
+      var v = parseInt(hex.substr(i,2),16)/255;
+      return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4);
+    });
+    return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2];
+  }
+  function showContrast(cfg){
+    var el = document.getElementById('contrast');
+    if (!/^#[0-9a-f]{6}$/i.test(cfg.accentColor) || !/^#[0-9a-f]{6}$/i.test(cfg.accentTextColor)){
+      el.textContent = ''; return;
+    }
+    var a = lum(cfg.accentColor), b = lum(cfg.accentTextColor);
+    var r = (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05);
+    el.textContent = 'Button contrast ' + r.toFixed(1) + ':1 — ' +
+      (r >= 4.5 ? 'passes WCAG AA.' : r >= 3 ? 'large text only.' : 'fails WCAG AA, pick another pair.');
+    el.style.color = r >= 4.5 ? '#3d6b2f' : r >= 3 ? '#8a6a1f' : '#a33';
+  }
+
+  /* ---------- emit only what differs from the defaults ---------- */
+  function diff(cfg){
+    var o = {};
+    Object.keys(cfg).forEach(function(k){
+      var d = DEF[k], v = cfg[k];
+      if (typeof d === 'number'){ if (parseFloat(v) !== d) o[k] = parseFloat(v); return; }
+      if (typeof d === 'boolean'){ if (!!v !== d) o[k] = !!v; return; }
+      if (typeof v === 'string' && typeof d === 'string' &&
+          /^#[0-9a-f]{6}$/i.test(v) && /^#[0-9a-f]{6}$/i.test(d)){
+        if (v.toUpperCase() !== d.toUpperCase()) o[k] = v.toUpperCase();
+        return;
+      }
+      if (String(v) !== String(d) && !(v === '' && (d === '' || d === undefined))) o[k] = v;
+    });
+    return o;
+  }
+
+  function kebab(s){ return s.replace(/[A-Z]/g, function(c){ return '-' + c.toLowerCase(); }); }
+  function attrEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+  function writeCode(cfg){
+    var o = diff(cfg);
+    if (mode === 'html'){
+      var lines = ['<!-- TRPL Digital Invite -->', '<div data-trpl-invite'];
+      Object.keys(o).forEach(function(k){
+        lines.push('     data-' + kebab(k) + '="' + attrEsc(o[k]) + '"');
+      });
+      lines[lines.length-1] += '></div>';
+      lines.push('<script src="' + HOST + '/dist/trpl-invite.js" defer><' + '/script>');
+      out.value = lines.join('\n');
+    } else {
+      out.value =
+        '<div id="invite"></div>\n' +
+        '<script src="' + HOST + '/dist/trpl-invite.js"><' + '/script>\n' +
+        '<script>\n' +
+        '  TRPLInvite.create("#invite", ' + JSON.stringify(o, null, 2).replace(/\n/g,'\n  ') + ');\n' +
+        '<' + '/script>';
+    }
+  }
+
+  document.getElementById('tabHtml').addEventListener('click', function(){
+    mode='html'; this.setAttribute('aria-selected','true');
+    document.getElementById('tabJs').setAttribute('aria-selected','false'); writeCode(collect());
+  });
+  document.getElementById('tabJs').addEventListener('click', function(){
+    mode='js'; this.setAttribute('aria-selected','true');
+    document.getElementById('tabHtml').setAttribute('aria-selected','false'); writeCode(collect());
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', function(){
+    out.select();
+    navigator.clipboard.writeText(out.value).then(function(){
+      var n = document.getElementById('copied');
+      n.textContent = 'Copied.';
+      setTimeout(function(){ n.textContent = ''; }, 2000);
+    });
+  });
+
+  document.getElementById('replayBtn').addEventListener('click', render);
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    form.reset();
+    form.querySelectorAll('input[data-c]').forEach(function(p){
+      var t = form.querySelector('input[type=text][data-k="'+p.dataset.c+'"]');
+      if (t) p.value = t.value;
+    });
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
