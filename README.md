@@ -1,9 +1,9 @@
 # TRPL Digital Invite
 
 A reusable JavaScript embed that turns any invitation artwork into a Paperless Post–style
-envelope animation: the envelope rises, the guest's name is hand-lettered on the front in
-script, it turns over to reveal the elkhorn brand seal, the flap opens, the invitation slides
-out and settles, and an RSVP button appears.
+envelope animation: a standard A7 envelope rises, addressed to the guest by name, turns over in
+3D to reveal the elkhorn brand seal, the flap opens, the invitation slides out and settles, and
+an RSVP button appears.
 
 **Builder:** <https://rsvp.labs.trlibrary.com/>
 **Demo:** <https://rsvp.labs.trlibrary.com/demo/>
@@ -73,8 +73,7 @@ on the RSVP button — the builder shows the live ratio as you edit.
 | Role | Face | Used for |
 |---|---|---|
 | Display | Dharma Gothic E | RSVP button, "TO" label, replay, postmark — all caps |
-| Body | ITC Clearface | Prompt copy |
-| Script | Great Vibes | Recipient name only |
+| Body | ITC Clearface | Recipient name and prompt copy |
 
 Dharma Gothic E, ITC Clearface and Frutiger Next are licensed through Adobe Fonts and cannot be
 bundled in a public repository. Point `data-font-kit-url` at the Library's Adobe Fonts kit and
@@ -87,8 +86,16 @@ data-font-kit-url="https://use.typekit.net/xxxxxxx.css"
 Without it, Oswald and Georgia stand in automatically — close enough that nothing looks broken,
 but not the brand faces. Get the kit URL from whoever maintains trlibrary.com.
 
-The calligraphic script for the recipient's name sits **outside** the brand type system on
-purpose: a hand-addressed envelope is the whole illusion, and the system has no script face.
+### Automatic ink
+
+`name-color`, `stamp-ink`, `stamp-accent`, `accent-text-color` and `prompt-color` all default
+to `auto`: the embed measures the WCAG contrast of Dark Gray and White against the surface
+underneath each one and picks whichever reads better. Change the envelope to Night Sky and the
+address turns white on its own; switch the RSVP button to Sunset Yellow and its label goes dark.
+Every one of the twelve brand colours clears AA in both roles. Set an explicit hex on any of
+them to override.
+
+Envelope surfaces are flat brand colour — no gradients, no tints, no paper sheen.
 
 ---
 
@@ -121,9 +128,9 @@ Only the values that differ from the defaults need to appear in the snippet.
 | `name` | — | Hard-code a name and skip the query string entirely |
 | `name-param` | `name` | Query-string key to read |
 | `name-fallback` | `Friend of the Library` | Used when the parameter is absent |
-| `name-color` | `#25282A` | Ink colour |
-| `name-font` | Great Vibes stack | CSS font stack |
-| `name-font-url` | Google Fonts | Stylesheet for the script face |
+| `name-color` | `auto` | Ink colour; `auto` picks Dark Gray or White off the envelope |
+| `name-font` | — | CSS font stack; blank follows `body-font` (ITC Clearface) |
+| `name-font-url` | — | Only needed for a non-brand face |
 | `postmark` | `MEDORA · NORTH DAKOTA` | Text around the postmark ring |
 
 ### Stage & background
@@ -143,9 +150,9 @@ Only the values that differ from the defaults need to appear in the snippet.
 
 | Option | Default | Description |
 |---|---|---|
-| `envelope-color` | `#D1CCBD` | Paper — Sand |
+| `envelope-color` | `#D1CCBD` | Paper — Sand. Rendered flat, no gradient |
 | `liner-color` | `#E7805D` | Inside and flap underside — Deep Orange |
-| `envelope-aspect` | `0.72` | Width ÷ height; `~1.40` for landscape |
+| `envelope-aspect` | `1.38` | Width ÷ height. `1.38` is a standard A7, 7¼ × 5¼ landscape; `0.72` gives a portrait envelope |
 | `envelope-scale` | `1` | Size multiplier |
 | `flap-shape` | `point` | `point` or `straight` |
 | `flap-depth` | `0.42` | Flap height as a share of envelope height |
@@ -158,8 +165,8 @@ Only the values that differ from the defaults need to appear in the snippet.
 | `seal-image` | — | Override the bundled mark with any image URL |
 | `seal-scale` | `1` | Size multiplier |
 | `stamp-paper` | `#FFFFFF` | Postage stamp background |
-| `stamp-ink` | `#25282A` | TRPL wordmark colour |
-| `stamp-accent` | `#D1CCBD` | Hairline frame inside the perforation |
+| `stamp-ink` | `auto` | TRPL wordmark colour; `auto` reads off the stamp paper |
+| `stamp-accent` | `auto` | Hairline frame inside the perforation |
 | `stamp-image` | — | Override the wordmark |
 
 ### Buttons & behaviour
@@ -169,7 +176,7 @@ Only the values that differ from the defaults need to appear in the snippet.
 | `prompt` | `Click the envelope to open` | Copy under the sealed envelope |
 | `prompt-color` | `auto` | `auto` picks white or Dark Gray from the background luminance |
 | `accent-color` | `#FC924E` | RSVP button fill |
-| `accent-text-color` | `#25282A` | RSVP button text |
+| `accent-text-color` | `auto` | RSVP button text; `auto` reads off the button fill |
 | `replay` | `true` | Replay control, lower left |
 | `replay-text` | `Replay` | Its label |
 | `auto-open` | `0` | Milliseconds after the intro; `0` waits for a click |
@@ -229,6 +236,9 @@ document.querySelector('#invite').addEventListener('trplinvite:opened', function
 - `prefers-reduced-motion: reduce` collapses every transition; the invitation simply appears.
 - The builder reports the live WCAG contrast ratio for the RSVP button colour pair.
 - `prompt-color: auto` keeps the prompt legible on both dark and light stages.
+- `name-color`, `stamp-ink`, `stamp-accent` and `accent-text-color` default to `auto`, so text
+  never ends up dark-on-dark when someone changes a colour. All twelve brand colours were
+  checked in both roles and clear AA.
 
 ---
 

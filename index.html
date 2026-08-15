@@ -169,18 +169,12 @@
           <input type="text" data-k="nameFallback" value="Friend of the Library">
           <span class="hint">Shown when no name is in the URL.</span>
         </label>
-        <p class="flag"><strong>Off-system by design.</strong> A calligraphic address is what sells the
-          hand-addressed envelope; the brand type system has no script face. Everything else in this
-          embed uses Dharma Gothic E and ITC Clearface.</p>
-        <label><span class="lb">Script font</span>
-          <select id="fontPick">
-            <option value="Great Vibes">Great Vibes (formal calligraphy)</option>
-            <option value="Tangerine">Tangerine (fine copperplate)</option>
-            <option value="Parisienne">Parisienne (relaxed script)</option>
-            <option value="Dancing Script">Dancing Script (casual)</option>
-          </select>
-        </label>
-        <label><span class="lb">Name ink colour</span>
+        <span class="hint" style="margin:0 0 14px">The name is set in ITC Clearface, the brand's
+          body face — change it under Brand fonts if you need something else.</span>
+        <div class="checkrow"><input type="checkbox" id="autoInk" checked>
+          <label for="autoInk" style="margin:0">Pick the ink automatically (recommended)</label></div>
+        <span class="hint" id="inkNote" style="margin:-8px 0 14px"></span>
+        <label id="inkManual" hidden><span class="lb">Name ink colour</span>
           <span class="colorrow"><input type="color" data-c="nameColor" value="#25282A"><input type="text" data-k="nameColor" value="#25282A"></span>
           <span class="swatches" data-for="nameColor"></span>
         </label>
@@ -251,8 +245,8 @@
           </select>
         </label>
         <label><span class="lb">Envelope shape (width ÷ height)</span>
-          <input type="number" step="0.01" min="0.5" max="1.8" data-k="envelopeAspect" value="0.72">
-          <span class="hint">0.72 = portrait invitation envelope. ~1.40 gives a landscape envelope.</span>
+          <input type="number" step="0.01" min="0.5" max="2.2" data-k="envelopeAspect" value="1.38">
+          <span class="hint">1.38 = a standard A7 envelope, 7¼ × 5¼ landscape. 0.72 gives a portrait one.</span>
         </label>
         <label><span class="lb">Envelope size</span>
           <input type="number" step="0.05" min="0.6" max="1.4" data-k="envelopeScale" value="1">
@@ -275,10 +269,11 @@
           <span class="colorrow"><input type="color" data-c="stampPaper" value="#FFFFFF"><input type="text" data-k="stampPaper" value="#FFFFFF"></span>
           <span class="swatches" data-for="stampPaper"></span>
         </label>
-        <label><span class="lb">TRPL wordmark ink</span>
+        <label id="stampInkManual" hidden><span class="lb">TRPL wordmark ink</span>
           <span class="colorrow"><input type="color" data-c="stampInk" value="#25282A"><input type="text" data-k="stampInk" value="#25282A"></span>
           <span class="swatches" data-for="stampInk"></span>
         </label>
+        <span class="hint" id="stampInkNote"></span>
       </div>
     </details>
 
@@ -292,11 +287,11 @@
           <span class="colorrow"><input type="color" data-c="accentColor" value="#FC924E"><input type="text" data-k="accentColor" value="#FC924E"></span>
           <span class="swatches" data-for="accentColor"></span>
         </label>
-        <label><span class="lb">Button text colour</span>
+        <label id="btnInkManual" hidden><span class="lb">Button text colour</span>
           <span class="colorrow"><input type="color" data-c="accentTextColor" value="#25282A"><input type="text" data-k="accentTextColor" value="#25282A"></span>
           <span class="swatches" data-for="accentTextColor"></span>
-          <span class="hint" id="contrast"></span>
         </label>
+        <span class="hint" id="contrast"></span>
         <div class="checkrow"><input type="checkbox" data-k="replay" checked id="rp"><label for="rp" style="margin:0">Show replay button (lower left)</label></div>
         <label><span class="lb">Auto-open after (ms)</span>
           <input type="number" step="250" min="0" data-k="autoOpen" value="0">
@@ -368,51 +363,36 @@
   var PRESETS = [
     { name:'Badlands Night', vignette:true,
       backgroundColor:'#25282A', envelopeColor:'#D1CCBD', linerColor:'#E7805D',
-      sealColor:'#FC924E', accentColor:'#FC924E', accentTextColor:'#25282A',
-      nameColor:'#25282A', stampInk:'#25282A', stampPaper:'#FFFFFF' },
+      sealColor:'#FC924E', accentColor:'#FC924E', stampPaper:'#FFFFFF' },
 
     { name:'Elkhorn', vignette:true,
       backgroundColor:'#1B4532', envelopeColor:'#FFFFFF', linerColor:'#1B4532',
-      sealColor:'#87BB41', accentColor:'#87BB41', accentTextColor:'#25282A',
-      nameColor:'#1B4532', stampInk:'#1B4532', stampPaper:'#FFFFFF' },
+      sealColor:'#87BB41', accentColor:'#87BB41', stampPaper:'#FFFFFF' },
 
     { name:'Night Sky', vignette:true,
       backgroundColor:'#092A4D', envelopeColor:'#D1CCBD', linerColor:'#092A4D',
-      sealColor:'#F9D635', accentColor:'#F9D635', accentTextColor:'#092A4D',
-      nameColor:'#092A4D', stampInk:'#092A4D', stampPaper:'#FFFFFF' },
+      sealColor:'#F9D635', accentColor:'#F9D635', stampPaper:'#FFFFFF' },
 
     { name:'Sunset', vignette:false,
       backgroundColor:'#E7805D', envelopeColor:'#FFFFFF', linerColor:'#25282A',
-      sealColor:'#25282A', accentColor:'#25282A', accentTextColor:'#FFFFFF',
-      nameColor:'#25282A', stampInk:'#25282A', stampPaper:'#FFFFFF' },
+      sealColor:'#25282A', accentColor:'#25282A', stampPaper:'#FFFFFF' },
 
     { name:'Gray Sky', vignette:false,
       backgroundColor:'#99ADC5', envelopeColor:'#FFFFFF', linerColor:'#092A4D',
-      sealColor:'#092A4D', accentColor:'#092A4D', accentTextColor:'#FFFFFF',
-      nameColor:'#092A4D', stampInk:'#092A4D', stampPaper:'#FFFFFF' },
+      sealColor:'#092A4D', accentColor:'#092A4D', stampPaper:'#FFFFFF' },
 
     { name:'Sand & Forest', vignette:false,
       backgroundColor:'#D1CCBD', envelopeColor:'#FFFFFF', linerColor:'#1B4532',
-      sealColor:'#1B4532', accentColor:'#1B4532', accentTextColor:'#FFFFFF',
-      nameColor:'#1B4532', stampInk:'#1B4532', stampPaper:'#FFFFFF' },
+      sealColor:'#1B4532', accentColor:'#1B4532', stampPaper:'#FFFFFF' },
 
     { name:'Prairie Dusk', vignette:true,
       backgroundColor:'#25282A', envelopeColor:'#FFFFFF', linerColor:'#F36079',
-      sealColor:'#F36079', accentColor:'#F36079', accentTextColor:'#25282A',
-      nameColor:'#25282A', stampInk:'#25282A', stampPaper:'#FFFFFF' },
+      sealColor:'#F36079', accentColor:'#F36079', stampPaper:'#FFFFFF' },
 
     { name:'Bright Forest', vignette:false,
       backgroundColor:'#8FC895', envelopeColor:'#FFFFFF', linerColor:'#1B4532',
-      sealColor:'#1B4532', accentColor:'#25282A', accentTextColor:'#FFFFFF',
-      nameColor:'#1B4532', stampInk:'#1B4532', stampPaper:'#FFFFFF' }
+      sealColor:'#1B4532', accentColor:'#25282A', stampPaper:'#FFFFFF' }
   ];
-
-  var FONT_URL = {
-    'Great Vibes':    'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap',
-    'Tangerine':      'https://fonts.googleapis.com/css2?family=Tangerine:wght@700&display=swap',
-    'Parisienne':     'https://fonts.googleapis.com/css2?family=Parisienne&display=swap',
-    'Dancing Script': 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&display=swap'
-  };
 
   var DEF   = TRPLInvite.defaults;
   var form  = document.getElementById('form');
@@ -486,12 +466,12 @@
       }
       cfg[el.dataset.k] = v;
     });
-    var f = document.getElementById('fontPick').value;
-    cfg.nameFont    = "'" + f + "', 'Snell Roundhand', 'Apple Chancery', cursive";
-    cfg.nameFontUrl = FONT_URL[f];
-    // the stamp's hairline frame tracks the envelope paper
-    cfg.stampAccent = (cfg.envelopeColor || '').toUpperCase() === '#FFFFFF'
-      ? '#D1CCBD' : cfg.envelopeColor;
+    if (document.getElementById('autoInk').checked){
+      cfg.nameColor       = 'auto';
+      cfg.stampInk        = 'auto';
+      cfg.accentTextColor = 'auto';
+    }
+    cfg.stampAccent = 'auto';
     return cfg;
   }
 
@@ -510,12 +490,45 @@
 
   function schedule(){ clearTimeout(rebuildTimer); rebuildTimer = setTimeout(render, 260); }
 
+  /* mirror the embed's own rule so the builder can explain the choice */
+  function lumOf(hex){
+    var m=/^#([0-9a-f]{6})$/i.exec(String(hex).trim()); if(!m) return 1;
+    var c=[0,2,4].map(function(i){
+      var v=parseInt(m[1].substr(i,2),16)/255;
+      return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4);
+    });
+    return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
+  }
+  function ratio(a,b){ var x=lumOf(a),y=lumOf(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); }
+  function autoInk(bg){ return ratio(bg,'#25282A') >= ratio(bg,'#FFFFFF') ? '#25282A' : '#FFFFFF'; }
+
+  function syncInkUI(cfg){
+    var auto = document.getElementById('autoInk').checked;
+    document.getElementById('inkManual').hidden = auto;
+    document.getElementById('stampInkManual').hidden = auto;
+    document.getElementById('btnInkManual').hidden = auto;
+    var nameNote = document.getElementById('inkNote');
+    var stampNote = document.getElementById('stampInkNote');
+    if (auto){
+      var n = autoInk(cfg.envelopeColor), t = autoInk(cfg.stampPaper);
+      nameNote.textContent = 'Name and postmark: ' +
+        (n === '#FFFFFF' ? 'White' : 'Dark Gray') + ' on this envelope.';
+      stampNote.textContent = 'Wordmark: ' +
+        (t === '#FFFFFF' ? 'White' : 'Dark Gray') + ', chosen from the stamp paper.';
+    } else {
+      nameNote.textContent = '';
+      stampNote.textContent = '';
+    }
+  }
+  document.getElementById('autoInk').addEventListener('change', schedule);
+
   function render(){
     var cfg = collect();
     var preview = Object.assign({}, cfg, { name: document.getElementById('pvName').value || '' });
     if (inst) inst.destroy();
     mount.innerHTML = '';
     inst = TRPLInvite.create(mount, preview);
+    syncInkUI(cfg);
     markActivePreset();
     showContrast(cfg);
     writeCode(cfg);
@@ -531,10 +544,10 @@
   }
   function showContrast(cfg){
     var el = document.getElementById('contrast');
-    if (!/^#[0-9a-f]{6}$/i.test(cfg.accentColor) || !/^#[0-9a-f]{6}$/i.test(cfg.accentTextColor)){
-      el.textContent = ''; return;
-    }
-    var a = lum(cfg.accentColor), b = lum(cfg.accentTextColor);
+    if (!/^#[0-9a-f]{6}$/i.test(cfg.accentColor)){ el.textContent = ''; return; }
+    var ink = (cfg.accentTextColor === 'auto') ? autoInk(cfg.accentColor) : cfg.accentTextColor;
+    if (!/^#[0-9a-f]{6}$/i.test(ink)) { el.textContent = ''; return; }
+    var a = lum(cfg.accentColor), b = lum(ink);
     var r = (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05);
     el.textContent = 'Button contrast ' + r.toFixed(1) + ':1 — ' +
       (r >= 4.5 ? 'passes WCAG AA.' : r >= 3 ? 'large text only.' : 'fails WCAG AA, pick another pair.');

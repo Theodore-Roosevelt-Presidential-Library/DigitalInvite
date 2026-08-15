@@ -51,7 +51,7 @@
 
     // --- Envelope ----------------------------------------------------
     envelopeColor:    '#D1CCBD',     // TRPL Sand, Pantone 7534C
-    envelopeAspect:   0.72,          // width / height (portrait)
+    envelopeAspect:   1.38,          // width / height — A7, the standard 7.25 x 5.25 envelope
     envelopeScale:    1,             // multiplier on default size
     linerColor:       '#E7805D',     // TRPL Deep Orange, Pantone 2022C
     flapDepth:        0.42,          // flap height as a share of envelope height
@@ -64,17 +64,17 @@
 
     // --- Postage stamp (front) ---------------------------------------
     stampPaper:       '#ffffff',
-    stampInk:         '#25282A',     // TRPL wordmark colour
+    stampInk:         'auto',        // TRPL wordmark colour; 'auto' follows the stamp paper
     stampImage:       '',            // optional override for the wordmark
-    stampAccent:      '#D1CCBD',     // thin frame inside the perforation
+    stampAccent:      'auto',        // hairline frame inside the perforation
 
     // --- Recipient name ----------------------------------------------
     name:             '',            // hard-coded name; otherwise read from URL
     nameParam:        'name',        // query-string key
     nameFallback:     'Friend of the Library',
-    nameColor:        '#25282A',
-    nameFont:         "'Great Vibes', 'Snell Roundhand', 'Apple Chancery', cursive",
-    nameFontUrl:      'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap',
+    nameColor:        'auto',        // 'auto' = Dark Gray or White, whichever reads on the envelope
+    nameFont:         '',            // blank = follow bodyFont (ITC Clearface)
+    nameFontUrl:      '',            // only needed for a non-brand face
     postmark:         'MEDORA · NORTH DAKOTA',
 
     // --- TRPL typographic system ---------------------------------------
@@ -99,7 +99,7 @@
     rsvpText:         'RSVP',
     rsvpTarget:       '_blank',
     accentColor:      '#FC924E',     // TRPL Sunset Orange
-    accentTextColor:  '#25282A',     // Dark Gray reads best on Sunset Orange
+    accentTextColor:  'auto',        // 'auto' = Dark Gray or White, whichever reads on the button
 
     // --- Behaviour ----------------------------------------------------
     replay:           true,
@@ -208,6 +208,21 @@
     return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
   }
 
+  /* WCAG contrast between two #rrggbb colours. */
+  function contrast(a, b) {
+    var la = luminance(a), lb = luminance(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+
+  /* Whichever of Dark Gray / White reads better on the given background. */
+  function autoInk(bg) {
+    return contrast(bg, '#25282A') >= contrast(bg, '#FFFFFF') ? '#25282A' : '#FFFFFF';
+  }
+
+  function resolveInk(value, bg) {
+    return (!value || value === 'auto') ? autoInk(bg) : value;
+  }
+
   function prefersReducedMotion() {
     return global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
@@ -243,63 +258,73 @@
       '.stage.opening .env-hit,.stage.opened .env-hit{cursor:default;pointer-events:none;}',
       '.env-hit:focus-visible{outline:2px solid var(--accent);}',
 
-      '.env-inner{position:absolute;top:0;right:0;bottom:0;left:0;transform-style:preserve-3d;',
-      '  transition:transform var(--t-flip) cubic-bezier(.55,.02,.3,1);',
-      '  filter:drop-shadow(0 12px 22px rgba(0,0,0,.30));}',
+      '.env-inner{position:absolute;top:0;right:0;bottom:0;left:0;transform-style:preserve-3d;}',
       '.stage.idle .env-inner{animation:breathe 3.6s ease-in-out 1.1s infinite;}',
-      '.stage.flipping .env-inner{transform:rotateY(180deg);}',
       '@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.2%)}}',
 
-      '.face{position:absolute;top:0;right:0;bottom:0;left:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;',
-      '  border-radius:3px;overflow:hidden;background:var(--env);}',
-      '.face.back{transform:rotateY(180deg);}',
+      /* Turning an envelope over is a hand movement: it lifts, cocks back a
+         little, swings through, then settles flat again. A plain rotateY
+         reads as a flat card spinning, so the tilt and lift carry the 3D. */
+      '.stage.flipping .env-inner{animation:turnOver var(--t-flip) cubic-bezier(.45,.05,.25,1) forwards;}',
+      '@keyframes turnOver{',
+      '  0%{transform:translateY(0) rotateY(0deg) rotateX(0deg) scale(1);}',
+      '  14%{transform:translateY(-3.5%) rotateY(-14deg) rotateX(7deg) scale(1.035);}',
+      '  50%{transform:translateY(-5.5%) rotateY(88deg) rotateX(5deg) scale(1.045);}',
+      '  86%{transform:translateY(-1.2%) rotateY(174deg) rotateX(1.5deg) scale(1.008);}',
+      '  100%{transform:translateY(0) rotateY(180deg) rotateX(0deg) scale(1);}',
+      '}',
+
+      '.face{position:absolute;top:0;right:0;bottom:0;left:0;',
+      '  backface-visibility:hidden;-webkit-backface-visibility:hidden;',
+      '  border-radius:3px;overflow:hidden;background:var(--env);',
+      '  box-shadow:0 12px 22px rgba(0,0,0,.30);}',
+      /* both faces need an explicit 3D transform or Safari keeps painting the
+         front through the back, which is what makes the type look mirrored */
+      '.face.front{transform:rotateY(0deg) translateZ(0.6px);}',
+      '.face.back{transform:rotateY(180deg) translateZ(0.6px);}',
 
       /* ---------- envelope FRONT ---------- */
-      '.paper{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);',
-      '  background-image:linear-gradient(150deg,rgba(255,255,255,.75),rgba(0,0,0,.05) 62%),',
-      '   radial-gradient(140% 120% at 15% 0%,rgba(255,255,255,.5),rgba(0,0,0,0) 55%);}',
+      '.paper{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);}',
       '.edge{position:absolute;top:0;right:0;bottom:0;left:0;border-radius:3px;pointer-events:none;',
-      '  box-shadow:inset 0 0 0 1px rgba(0,0,0,.10),inset 0 -14px 26px rgba(0,0,0,.07);}',
+      '  box-shadow:inset 0 0 0 1px var(--paper-edge);}',
 
-      '.stamp{position:absolute;top:5.5%;right:6.5%;width:var(--stamp-w);height:var(--stamp-h);',
-      '  background:var(--stamp-paper);padding:6%;display:flex;align-items:center;justify-content:center;',
+      '.stamp{position:absolute;top:9%;left:7%;width:var(--stamp-w);height:var(--stamp-h);',
+      '  background:var(--stamp-paper);padding:4%;display:flex;align-items:center;justify-content:center;',
       '  filter:drop-shadow(0 1px 2px rgba(0,0,0,.28));',
       '  -webkit-mask-image:var(--perf);mask-image:var(--perf);',
       '  -webkit-mask-size:100% 100%;mask-size:100% 100%;}',
-      '.stamp-frame{position:absolute;top:8%;right:8%;bottom:8%;left:8%;border:1px solid var(--stamp-accent);}',
-      '.stamp-logo{position:relative;width:82%;height:62%;background-color:var(--stamp-ink);',
+      '.stamp-frame{position:absolute;top:6%;right:6%;bottom:6%;left:6%;border:1px solid var(--stamp-accent);}',
+      '.stamp-logo{position:relative;width:92%;height:80%;background-color:var(--stamp-ink);',
       '  -webkit-mask-image:var(--wordmark);mask-image:var(--wordmark);',
       '  -webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;',
       '  -webkit-mask-position:center;mask-position:center;}',
       '.stamp-logo.img{background:none;-webkit-mask:none;mask:none;',
       '  background-image:var(--wordmark);background-size:contain;background-repeat:no-repeat;background-position:center;}',
 
-      '.postmark{position:absolute;top:7%;right:36%;width:var(--pm-d);height:var(--pm-d);opacity:.30;',
+      '.postmark{position:absolute;top:9%;right:8%;width:var(--pm-d);height:var(--pm-d);',
+      '  color:var(--name-c);opacity:.38;',
       '  transform:rotate(-11deg);pointer-events:none;}',
       '.postmark svg{width:100%;height:100%;}',
 
-      '.addr{position:absolute;left:9%;right:9%;top:47%;text-align:center;}',
+      '.addr{position:absolute;left:10%;right:10%;top:54%;text-align:center;}',
       '.to{font-family:var(--display-font);font-size:calc(var(--w) * .020);letter-spacing:.26em;',
       '  text-transform:uppercase;color:var(--name-c);opacity:.55;margin-bottom:.35em;}',
-      '.who{font-family:var(--name-font);color:var(--name-c);line-height:1.06;',
-      '  font-size:calc(var(--w) * .066);word-break:break-word;}',
-      '.rule{width:42%;height:1px;margin:calc(var(--w) * .022) auto 0;background:var(--name-c);opacity:.22;}',
+      '.who{font-family:var(--name-font);color:var(--name-c);line-height:1.22;',
+      '  font-size:calc(var(--w) * .040);letter-spacing:.005em;word-break:break-word;}',
+      '.rule{width:38%;height:1px;margin:calc(var(--w) * .020) auto 0;background:var(--name-c);opacity:.22;}',
 
       /* ---------- envelope BACK (static, used during the flip) ---------- */
-      '.back-panel{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);',
-      '  background-image:linear-gradient(200deg,rgba(255,255,255,.6),rgba(0,0,0,.06) 70%);}',
+      '.back-panel{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);}',
       '.seam{position:absolute;left:0;right:0;top:var(--throat-h);height:1px;background:rgba(0,0,0,.10);}',
       '.static-flap{position:absolute;left:0;right:0;top:0;height:var(--flap-h);}',
 
       /* flap surface, shared by static + live versions */
       '.flap-face{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);',
-      '  background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(0,0,0,.08));',
-      '  box-shadow:0 5px 12px rgba(0,0,0,.16);}',
+      '  box-shadow:0 4px 10px rgba(0,0,0,.14);}',
       '.flap-face.point{-webkit-clip-path:polygon(0 0,100% 0,100% 52%,50% 100%,0 52%);',
       '  clip-path:polygon(0 0,100% 0,100% 52%,50% 100%,0 52%);}',
       '.flap-face.straight{clip-path:polygon(0 0,100% 0,100% 100%,0 100%);}',
-      '.flap-lining{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--liner);',
-      '  background-image:linear-gradient(180deg,rgba(0,0,0,.22),rgba(255,255,255,.10));}',
+      '.flap-lining{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--liner);}',
 
       '.seal{position:absolute;left:50%;top:calc(var(--flap-h) * 0.60);',
       '  width:var(--seal-d);height:var(--seal-d);transform:translate(-50%,-50%);z-index:3;pointer-events:none;',
@@ -316,15 +341,12 @@
       '.stage.live .env-inner{opacity:0;}',
 
       '.throat{position:absolute;left:0;right:0;top:0;height:calc(var(--throat-h) + 1px);',
-      '  background:var(--liner);background-image:linear-gradient(180deg,rgba(0,0,0,.34),rgba(0,0,0,.06));',
-      '  z-index:2;border-radius:3px 3px 0 0;}',
-      '.throat::after{content:"";position:absolute;left:0;right:0;top:0;height:14%;',
-      '  background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0));}',
+      '  background:var(--liner);z-index:2;border-radius:3px 3px 0 0;}',
 
       '.pocket{position:absolute;left:0;right:0;top:var(--throat-h);bottom:0;z-index:6;',
-      '  background:var(--env);background-image:linear-gradient(200deg,rgba(255,255,255,.55),rgba(0,0,0,.07) 70%);',
-      '  border-radius:0 0 3px 3px;',
-      '  box-shadow:0 -2px 6px rgba(0,0,0,.10),0 14px 24px rgba(0,0,0,.30),inset 0 0 0 1px rgba(0,0,0,.08);}',
+      '  background:var(--env);border-radius:0 0 3px 3px;',
+      '  box-shadow:0 -2px 6px rgba(0,0,0,.10),0 14px 24px rgba(0,0,0,.30),',
+      '           inset 0 0 0 1px var(--paper-edge);}',
 
       '.flap{position:absolute;left:0;right:0;top:0;height:var(--flap-h);z-index:8;',
       '  transform-style:preserve-3d;transform-origin:top center;transform:rotateX(0deg);',
@@ -339,15 +361,26 @@
       '  z-index:4;transform-origin:50% 50%;',
       '  transform:translate(-50%,calc(-50% + var(--card-tuck)));',
       '  box-shadow:0 8px 20px rgba(0,0,0,.32);border-radius:var(--card-r);overflow:hidden;background:#fff;',
-      '  transition:transform var(--t-cardrise) cubic-bezier(.28,.7,.3,1);}',
+      /* A portrait card cannot fit a landscape envelope, so everything below
+         the throat is clipped away. The clip eases in lockstep with the rise. */
+      '  -webkit-clip-path:inset(0 0 var(--card-clip) 0);clip-path:inset(0 0 var(--card-clip) 0);',
+      '  transition:transform var(--t-cardrise) cubic-bezier(.28,.7,.3,1),',
+      '             clip-path var(--t-cardrise) cubic-bezier(.28,.7,.3,1),',
+      '             -webkit-clip-path var(--t-cardrise) cubic-bezier(.28,.7,.3,1);}',
       '.card img{display:block;width:100%;height:100%;object-fit:cover;}',
-      '.stage.card-out .card{transform:translate(-50%,calc(-50% + var(--card-tuck) - var(--card-lift)));}',
+      /* once the flap is up and out of the way the card comes forward */
+      '.stage.card-out .card{z-index:12;',
+      '  transform:translate(-50%,calc(-50% + var(--card-tuck) - var(--card-lift)));',
+      '  -webkit-clip-path:inset(0 0 var(--card-clip-out) 0);clip-path:inset(0 0 var(--card-clip-out) 0);}',
       /* the envelope withdraws; the card is left holding the frame */
       '.stage.card-final .throat,.stage.card-final .pocket{transform:translateY(30%);opacity:0;',
       '  transition:transform var(--t-settle) cubic-bezier(.4,0,.2,1),opacity calc(var(--t-settle) * .75) ease;}',
       '.stage.card-final .flap{opacity:0;transition:opacity calc(var(--t-settle) * .55) ease;}',
       '.stage.card-final .card{z-index:20;',
-      '  transition:transform var(--t-settle) cubic-bezier(.22,.8,.26,1),box-shadow var(--t-settle) ease;',
+      '  -webkit-clip-path:inset(0 0 0 0);clip-path:inset(0 0 0 0);',
+      '  transition:transform var(--t-settle) cubic-bezier(.22,.8,.26,1),',
+      '             clip-path var(--t-settle) ease,-webkit-clip-path var(--t-settle) ease,',
+      '             box-shadow var(--t-settle) ease;',
       '  transform:translate(-50%,-50%) translateY(var(--card-final-y)) scale(var(--card-final-s));',
       '  box-shadow:0 20px 46px rgba(0,0,0,.42);}',
 
@@ -563,16 +596,21 @@
     s.setProperty('--seal-img', cssUrl(sealSrc));
     s.setProperty('--seal-s', cfg.sealScale);
     s.setProperty('--stamp-paper', cfg.stampPaper);
-    s.setProperty('--stamp-ink', cfg.stampInk);
-    s.setProperty('--stamp-accent', cfg.stampAccent);
+    var stampInk = resolveInk(cfg.stampInk, cfg.stampPaper);
+    s.setProperty('--stamp-ink', stampInk);
+    s.setProperty('--stamp-accent',
+      (!cfg.stampAccent || cfg.stampAccent === 'auto') ? stampInk : cfg.stampAccent);
     s.setProperty('--wordmark', cssUrl(markSrc));
     s.setProperty('--perf', cssUrl(perfMask()));
-    s.setProperty('--name-c', cfg.nameColor);
-    s.setProperty('--name-font', cfg.nameFont);
+    s.setProperty('--name-c', resolveInk(cfg.nameColor, cfg.envelopeColor));
+    // a flat envelope still needs its edge read against the stage
+    s.setProperty('--paper-edge', luminance(cfg.envelopeColor) > 0.5
+      ? 'rgba(0,0,0,.14)' : 'rgba(255,255,255,.18)');
+    s.setProperty('--name-font', cfg.nameFont || cfg.bodyFont);
     s.setProperty('--display-font', cfg.displayFont);
     s.setProperty('--body-font', cfg.bodyFont);
     s.setProperty('--accent', cfg.accentColor);
-    s.setProperty('--accent-t', cfg.accentTextColor);
+    s.setProperty('--accent-t', resolveInk(cfg.accentTextColor, cfg.accentColor));
 
     // Prompt copy has to stay legible whether the stage is Dark Gray or Sand.
     var darkStage = luminance(cfg.backgroundColor) < 0.35 || !!cfg.backgroundImage;
@@ -617,51 +655,59 @@
     var W = this.stage.clientWidth || parseFloat(cfg.maxWidth) || 620;
     var H = this.stage.clientHeight || W * 1.25;
 
-    var envW = W * 0.50 * cfg.envelopeScale;
+    // Fit the envelope by whichever edge binds first, so a landscape A7 and a
+    // portrait invitation envelope both sit comfortably in the frame.
+    var envW = Math.min(W * 0.78, H * 0.62 * cfg.envelopeAspect) * cfg.envelopeScale;
     var envH = envW / cfg.envelopeAspect;
-    // keep the envelope inside the frame on very short stages
-    var maxEnvH = H * 0.62;
-    if (envH > maxEnvH) { envH = maxEnvH; envW = envH * cfg.envelopeAspect; }
+
+    var flapH  = envH * cfg.flapDepth;
+    // A pointed flap only seals across its shoulders (52% down the clip path),
+    // so the pocket has to start there or the corners beside the point show through.
+    var throatH = flapH * (cfg.flapShape === 'straight' ? 1 : 0.52);
 
     var ar = this.cardAR || 0.668;
-    var cardW = envW * 0.92;
+    var cardW = envW * 0.82;
     var cardH = cardW / ar;
-    // the card must tuck fully inside the envelope, so cap its height
-    var maxCardH = envH * 0.94;
-    if (cardH > maxCardH) { cardH = maxCardH; cardW = cardH * ar; }
-    // sit the card low in the envelope, a hair above the bottom edge
-    var tuck = envH * 0.47 - cardH / 2;
 
-    // How far the card rides up out of the throat before it settles.
-    // Never so far that its top leaves the frame.
-    var restCentreY = H * 0.52 + tuck;
-    var headroom = restCentreY - cardH / 2 - H * 0.04;
-    var lift = Math.max(envH * 0.22, Math.min(envH * 0.55, headroom));
-    // final size: fill most of the frame without crowding the CTA
+    // The card sits with its head in the throat. Everything below the throat
+    // is clipped, which is what lets a tall card live in a wide envelope.
+    var restTop = throatH * 0.35;
+    var tuck    = restTop + cardH / 2 - envH / 2;
+    var clipRest = Math.max(0, restTop + cardH - throatH);
+
+    // Rise as far as the frame allows without pushing the card's head off the top.
+    var envTopStage = H * 0.52 - envH / 2;
+    var headroom = (envTopStage + restTop) - H * 0.04;
+    var lift = Math.max(0, Math.min(headroom, clipRest));
+    var clipOut = Math.max(0, clipRest - lift);
+
+    // Final size: fill most of the frame without crowding the RSVP button.
     var finalH = Math.min(H * 0.78, W * 0.98 / ar);
     var finalS = finalH / cardH;
 
     s.setProperty('--w', W + 'px');
-    s.setProperty('--env-w', envW + 'px');
-    s.setProperty('--env-h', envH + 'px');
-    // A pointed flap only seals across its shoulders (52% down the clip path),
-    // so the pocket has to start there or the corners beside the point show through.
-    var flapH = envH * cfg.flapDepth;
+    s.setProperty('--env-w', envW.toFixed(1) + 'px');
+    s.setProperty('--env-h', envH.toFixed(1) + 'px');
     s.setProperty('--flap-h', flapH.toFixed(1) + 'px');
-    s.setProperty('--throat-h', (flapH * (cfg.flapShape === 'straight' ? 1 : 0.52)).toFixed(1) + 'px');
+    s.setProperty('--throat-h', throatH.toFixed(1) + 'px');
     s.setProperty('--card-w', cardW.toFixed(1) + 'px');
     s.setProperty('--card-h', cardH.toFixed(1) + 'px');
     s.setProperty('--card-ar', String(ar));
-    var stampW = envW * 0.26;
-    s.setProperty('--stamp-w', stampW.toFixed(1) + 'px');
-    s.setProperty('--stamp-h', (stampW / 0.82).toFixed(1) + 'px');
-    s.setProperty('--pm-d', (envW * 0.30).toFixed(1) + 'px');
-    s.setProperty('--seal-d', (envW * 0.30 * cfg.sealScale).toFixed(1) + 'px');
     s.setProperty('--card-tuck', tuck.toFixed(1) + 'px');
-    s.setProperty('--card-lift', lift + 'px');
+    s.setProperty('--card-lift', lift.toFixed(1) + 'px');
+    s.setProperty('--card-clip', clipRest.toFixed(1) + 'px');
+    s.setProperty('--card-clip-out', clipOut.toFixed(1) + 'px');
     s.setProperty('--card-final-s', finalS.toFixed(4));
-    // card is anchored at top:52%; nudge it to sit at 45.5% of the frame
+    // the card is anchored at the envelope's centre; nudge it to 45.5% of the frame
     s.setProperty('--card-final-y', (H * (0.455 - 0.52)).toFixed(1) + 'px');
+
+    // Stamp and postmark scale off the envelope's height so they stay in
+    // proportion whether the envelope is landscape or portrait.
+    var stampH = envH * 0.30;
+    s.setProperty('--stamp-h', stampH.toFixed(1) + 'px');
+    s.setProperty('--stamp-w', (stampH * 0.82).toFixed(1) + 'px');
+    s.setProperty('--pm-d', (envH * 0.30).toFixed(1) + 'px');
+    s.setProperty('--seal-d', (envH * 0.34 * cfg.sealScale).toFixed(1) + 'px');
   };
 
   Invite.prototype.observe = function () {
