@@ -97,6 +97,17 @@ them to override.
 
 Envelope surfaces are flat brand colour — no gradients, no tints, no paper sheen.
 
+### Liner rule
+
+The liner is the only thing the open flap reveals, so it must not match either the background or
+the envelope paper. Matching the background makes the open envelope read as a hole punched in
+the page; matching the paper makes the opening vanish. Every preset keeps a wide margin on both,
+and the builder warns if a hand-picked liner gets too close.
+
+The check uses perceptual colour distance rather than contrast ratio — Sunset Yellow and Sand
+are nearly identical in luminance but obviously different colours, and flagging pairs like that
+would only train people to ignore the warning.
+
 ### Layout
 
 The embed runs full width with square corners and works out its own height, so it drops into a
@@ -164,7 +175,7 @@ Only the values that differ from the defaults need to appear in the snippet.
 | Option | Default | Description |
 |---|---|---|
 | `envelope-color` | `#D1CCBD` | Paper — Sand. Rendered flat, no gradient |
-| `liner-color` | `#E7805D` | Inside and flap underside — Deep Orange |
+| `liner-color` | `#E7805D` | Inside and flap underside — Deep Orange. Keep it distinct from both the background and the paper |
 | `envelope-aspect` | `1.38` | Width ÷ height. `1.38` is a standard A7, 7¼ × 5¼ landscape; `0.72` gives a portrait envelope |
 | `envelope-scale` | `1` | Size multiplier |
 | `flap-shape` | `point` | `point` or `straight` |

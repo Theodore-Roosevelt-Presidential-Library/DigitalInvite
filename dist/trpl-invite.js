@@ -346,7 +346,8 @@
       '.stage.live .env-inner{opacity:0;}',
 
       '.throat{position:absolute;left:0;right:0;top:0;height:calc(var(--throat-h) + 1px);',
-      '  background:var(--liner);z-index:2;border-radius:3px 3px 0 0;}',
+      '  background:var(--liner);z-index:2;border-radius:3px 3px 0 0;',
+      '  box-shadow:inset 0 2px 0 var(--throat-edge);}',
 
       '.pocket{position:absolute;left:0;right:0;top:var(--throat-h);bottom:0;z-index:6;',
       '  background:var(--env);border-radius:0 0 3px 3px;',
@@ -580,6 +581,9 @@
     s.setProperty('--stage-r', cfg.stageRadius);
     s.setProperty('--env', cfg.envelopeColor);
     s.setProperty('--liner', cfg.linerColor);
+    // a flat lip along the fold so the opening still reads as an opening
+    s.setProperty('--throat-edge', luminance(cfg.linerColor) > 0.4
+      ? 'rgba(0,0,0,.22)' : 'rgba(255,255,255,.16)');
     s.setProperty('--seal-c', cfg.sealColor);
     s.setProperty('--seal-img', cssUrl(sealSrc));
     s.setProperty('--seal-s', cfg.sealScale);
