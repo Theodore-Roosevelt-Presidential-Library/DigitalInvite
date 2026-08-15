@@ -297,11 +297,25 @@
           <input type="number" step="250" min="0" data-k="autoOpen" value="0">
           <span class="hint">0 waits for a click. 2500 opens on its own after a moment.</span>
         </label>
-        <label><span class="lb">Frame shape (width / height)</span>
-          <input type="text" data-k="aspect" value="4 / 5">
+        <label><span class="lb">Frame height</span>
+          <select data-k="aspect">
+            <option value="auto">Automatic (fits its container)</option>
+            <option value="4 / 5">Fixed 4 : 5 portrait</option>
+            <option value="1 / 1">Fixed square</option>
+            <option value="3 / 2">Fixed 3 : 2 landscape</option>
+          </select>
+          <span class="hint">Automatic keeps a portrait shape in a narrow column and caps at the
+            height below once the embed runs full width.</span>
+        </label>
+        <label><span class="lb">Maximum height <span style="font-weight:400;color:var(--muted)">(automatic only)</span></span>
+          <input type="text" data-k="maxHeight" value="88vh">
         </label>
         <label><span class="lb">Maximum width</span>
-          <input type="text" data-k="maxWidth" value="620px">
+          <input type="text" data-k="maxWidth" value="100%">
+          <span class="hint">100% fills the container. Set a px value to keep it narrower.</span>
+        </label>
+        <label><span class="lb">Background corner radius</span>
+          <input type="text" data-k="stageRadius" value="0">
         </label>
       </div>
     </details>

@@ -97,6 +97,17 @@ them to override.
 
 Envelope surfaces are flat brand colour — no gradients, no tints, no paper sheen.
 
+### Layout
+
+The embed runs full width with square corners and works out its own height, so it drops into a
+page section without a wrapper. On a narrow column it keeps a portrait frame; once it runs wide
+the height is capped by `max-height` (88vh by default) so it never pushes the RSVP button below
+the fold. Typography scales off the smaller dimension, which keeps the button and prompt in
+proportion on a wide layout rather than growing to headline size.
+
+The stamp sits top left at the TRPL wordmark's own proportions with an even margin and softly
+rounded corners; the postmark sits top right, centred on the same line.
+
 ---
 
 ## Configuration
@@ -142,9 +153,11 @@ Only the values that differ from the defaults need to appear in the snippet.
 | `background-size` | `cover` | `cover`, `contain`, `auto` |
 | `background-position` | `center` | Standard CSS value |
 | `vignette` | `true` | Soft dark edge — turn off on light backgrounds |
-| `aspect` | `4 / 5` | Frame proportion |
-| `max-width` | `620px` | Widest the embed will render |
+| `aspect` | `auto` | `auto` derives the height from the width; or pin a ratio like `4 / 5` |
+| `max-height` | `88vh` | Ceiling when `aspect` is `auto`. Accepts `vh` or `px` |
+| `max-width` | `100%` | Fills its container. Set a px value to keep it narrower |
 | `min-height` | `420px` | Floor for very narrow columns |
+| `stage-radius` | `0` | Corner radius on the background |
 
 ### Envelope
 
@@ -165,8 +178,10 @@ Only the values that differ from the defaults need to appear in the snippet.
 | `seal-image` | — | Override the bundled mark with any image URL |
 | `seal-scale` | `1` | Size multiplier |
 | `stamp-paper` | `#FFFFFF` | Postage stamp background |
+| `stamp-aspect` | `1.708` | Width ÷ height of the stamp artwork; auto-detected for a custom `stamp-image` |
+| `stamp-padding` | `auto` | Margin around the artwork; `auto` lands near 12px, or set e.g. `14px` |
 | `stamp-ink` | `auto` | TRPL wordmark colour; `auto` reads off the stamp paper |
-| `stamp-accent` | `auto` | Hairline frame inside the perforation |
+| `stamp-accent` | `auto` | Hairline border around the stamp |
 | `stamp-image` | — | Override the wordmark |
 
 ### Buttons & behaviour

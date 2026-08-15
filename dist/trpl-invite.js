@@ -45,9 +45,11 @@
     backgroundSize:   'cover',       // cover | contain | auto
     backgroundPosition: 'center',
     vignette:         true,          // soft dark edge over the background
-    aspect:           '4 / 5',       // stage aspect ratio (w / h)
-    maxWidth:         '620px',
+    aspect:           'auto',        // 'auto' sizes the height to fit; or a ratio like '4 / 5'
+    maxWidth:         '100%',        // fills its container by default
     minHeight:        '420px',
+    maxHeight:        '88vh',        // ceiling when aspect is 'auto'; accepts vh or px
+    stageRadius:      '0',           // corner radius on the background
 
     // --- Envelope ----------------------------------------------------
     envelopeColor:    '#D1CCBD',     // TRPL Sand, Pantone 7534C
@@ -66,7 +68,9 @@
     stampPaper:       '#ffffff',
     stampInk:         'auto',        // TRPL wordmark colour; 'auto' follows the stamp paper
     stampImage:       '',            // optional override for the wordmark
-    stampAccent:      'auto',        // hairline frame inside the perforation
+    stampAspect:      1.708,         // width / height of the stamp artwork (TRPL wordmark)
+    stampPadding:     'auto',        // margin around the artwork; 'auto' ~ 12px, or set e.g. '14px'
+    stampAccent:      'auto',        // hairline border around the stamp
 
     // --- Recipient name ----------------------------------------------
     name:             '',            // hard-coded name; otherwise read from URL
@@ -109,7 +113,7 @@
   };
 
   var NUMERIC = ['envelopeAspect', 'envelopeScale', 'flapDepth', 'sealScale',
-                 'cardAspect', 'autoOpen'];
+                 'cardAspect', 'autoOpen', 'stampAspect'];
   var BOOLEAN = ['vignette', 'replay', 'openOnce'];
 
   /* Animation timeline (ms) */
@@ -237,7 +241,7 @@
 
       '.stage{position:relative;width:100%;max-width:var(--max-w);margin:0 auto;',
       '  aspect-ratio:var(--aspect);min-height:var(--min-h);overflow:hidden;',
-      '  border-radius:6px;background-color:var(--bg);background-image:var(--bg-img);',
+      '  border-radius:var(--stage-r);background-color:var(--bg);background-image:var(--bg-img);',
       '  background-size:var(--bg-size);background-position:var(--bg-pos);',
       '  background-repeat:no-repeat;font-family:var(--body-font);',
       '  -webkit-font-smoothing:antialiased;perspective:1600px;user-select:none;-webkit-user-select:none;}',
@@ -288,30 +292,31 @@
       '.edge{position:absolute;top:0;right:0;bottom:0;left:0;border-radius:3px;pointer-events:none;',
       '  box-shadow:inset 0 0 0 1px var(--paper-edge);}',
 
+      /* The stamp is the wordmark's own proportions plus an even margin,
+         with softly rounded corners rather than a perforated edge. */
       '.stamp{position:absolute;top:9%;left:7%;width:var(--stamp-w);height:var(--stamp-h);',
-      '  background:var(--stamp-paper);padding:4%;display:flex;align-items:center;justify-content:center;',
-      '  filter:drop-shadow(0 1px 2px rgba(0,0,0,.28));',
-      '  -webkit-mask-image:var(--perf);mask-image:var(--perf);',
-      '  -webkit-mask-size:100% 100%;mask-size:100% 100%;}',
-      '.stamp-frame{position:absolute;top:6%;right:6%;bottom:6%;left:6%;border:1px solid var(--stamp-accent);}',
-      '.stamp-logo{position:relative;width:92%;height:80%;background-color:var(--stamp-ink);',
+      '  background:var(--stamp-paper);padding:var(--stamp-pad);',
+      '  display:flex;align-items:center;justify-content:center;',
+      '  border:1px solid var(--stamp-accent);border-radius:var(--stamp-r);',
+      '  box-shadow:0 1px 3px rgba(0,0,0,.22);}',
+      '.stamp-logo{position:relative;width:100%;height:100%;background-color:var(--stamp-ink);',
       '  -webkit-mask-image:var(--wordmark);mask-image:var(--wordmark);',
       '  -webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;',
       '  -webkit-mask-position:center;mask-position:center;}',
       '.stamp-logo.img{background:none;-webkit-mask:none;mask:none;',
       '  background-image:var(--wordmark);background-size:contain;background-repeat:no-repeat;background-position:center;}',
 
-      '.postmark{position:absolute;top:9%;right:8%;width:var(--pm-d);height:var(--pm-d);',
+      '.postmark{position:absolute;top:var(--pm-top);right:8%;width:var(--pm-d);height:var(--pm-d);',
       '  color:var(--name-c);opacity:.38;',
       '  transform:rotate(-11deg);pointer-events:none;}',
       '.postmark svg{width:100%;height:100%;}',
 
       '.addr{position:absolute;left:10%;right:10%;top:54%;text-align:center;}',
-      '.to{font-family:var(--display-font);font-size:calc(var(--w) * .020);letter-spacing:.26em;',
+      '.to{font-family:var(--display-font);font-size:calc(var(--env-w) * .026);letter-spacing:.26em;',
       '  text-transform:uppercase;color:var(--name-c);opacity:.55;margin-bottom:.35em;}',
       '.who{font-family:var(--name-font);color:var(--name-c);line-height:1.22;',
-      '  font-size:calc(var(--w) * .040);letter-spacing:.005em;word-break:break-word;}',
-      '.rule{width:38%;height:1px;margin:calc(var(--w) * .020) auto 0;background:var(--name-c);opacity:.22;}',
+      '  font-size:calc(var(--env-w) * .052);letter-spacing:.005em;word-break:break-word;}',
+      '.rule{width:38%;height:1px;margin:calc(var(--env-w) * .026) auto 0;background:var(--name-c);opacity:.22;}',
 
       /* ---------- envelope BACK (static, used during the flip) ---------- */
       '.back-panel{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);}',
@@ -387,7 +392,7 @@
       /* ---------- prompt + CTA ---------- */
       '.prompt{position:absolute;left:8%;right:8%;bottom:5.5%;z-index:12;text-align:center;',
       '  color:var(--prompt-c);opacity:0;transform:translateY(8px);pointer-events:none;',
-      '  font-family:var(--body-font);font-size:calc(var(--w) * .028);letter-spacing:.02em;',
+      '  font-family:var(--body-font);font-size:calc(var(--u) * .028);letter-spacing:.02em;',
       '  text-shadow:var(--prompt-shadow);transition:opacity 500ms ease,transform 500ms ease;}',
       '.stage.idle .prompt{opacity:.92;transform:translateY(0);animation:nudge 2.6s ease-in-out .8s infinite;}',
       '@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}',
@@ -398,14 +403,14 @@
       /* Dharma Gothic E is a display face — all caps, calls to action only */
       '.cta a{display:inline-block;text-decoration:none;background:var(--accent);color:var(--accent-t);',
       '  font-family:var(--display-font);font-weight:600;letter-spacing:.14em;text-transform:uppercase;',
-      '  font-size:calc(var(--w) * .034);padding:.6em 2.1em .5em;border-radius:2px;',
+      '  font-size:calc(var(--u) * .034);padding:.6em 2.1em .5em;border-radius:2px;',
       '  box-shadow:0 8px 22px rgba(0,0,0,.4);transition:transform 160ms ease,filter 160ms ease;}',
       '.cta a:hover{transform:translateY(-2px);filter:brightness(1.07);}',
       '.cta a:focus-visible{outline:2px solid #fff;outline-offset:3px;}',
 
       '.replay{position:absolute;left:3.5%;bottom:4%;z-index:31;border:0;cursor:pointer;',
       '  background:var(--replay-bg);color:#fff;font-family:var(--display-font);border-radius:999px;',
-      '  font-size:calc(var(--w) * .026);letter-spacing:.1em;text-transform:uppercase;',
+      '  font-size:calc(var(--u) * .026);letter-spacing:.1em;text-transform:uppercase;',
       '  padding:.6em 1.1em .6em .85em;display:inline-flex;align-items:center;gap:.45em;',
       '  opacity:0;pointer-events:none;transition:opacity 400ms ease,background 160ms ease;',
       '  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}',
@@ -421,24 +426,6 @@
       '  .stage *{transition-duration:1ms !important;animation:none !important;}',
       '}'
     ].join('\n');
-  }
-
-  /* Perforated-stamp edge, as an inline SVG mask */
-  function perfMask() {
-    var svg =
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 122" preserveAspectRatio="none">' +
-      '<defs><mask id="m"><rect width="100" height="122" fill="#fff"/>' +
-      (function () {
-        var out = '', i;
-        for (i = 0; i <= 10; i++) out += '<circle cx="' + (i * 10) + '" cy="0" r="2.6" fill="#000"/>';
-        for (i = 0; i <= 10; i++) out += '<circle cx="' + (i * 10) + '" cy="122" r="2.6" fill="#000"/>';
-        for (i = 0; i <= 12; i++) out += '<circle cx="0" cy="' + (i * 10.16) + '" r="2.6" fill="#000"/>';
-        for (i = 0; i <= 12; i++) out += '<circle cx="100" cy="' + (i * 10.16) + '" r="2.6" fill="#000"/>';
-        return out;
-      })() +
-      '</mask></defs>' +
-      '<rect width="100" height="122" fill="#fff" mask="url(#m)"/></svg>';
-    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
 
   function postmarkSvg(text) {
@@ -526,7 +513,6 @@
       '      <div class="paper"></div>',
       '      <div class="postmark">' + postmarkSvg(cfg.postmark) + '</div>',
       '      <div class="stamp">',
-      '        <div class="stamp-frame"></div>',
       '        <div class="stamp-logo' + (markIsImg ? ' img' : '') + '"></div>',
       '      </div>',
       '      <div class="addr">',
@@ -576,6 +562,7 @@
         : ''
     ].join('\n');
 
+    var self = this;
     this.root.appendChild(stage);
     this.stage = stage;
     this.card  = stage.querySelector('.card');
@@ -587,9 +574,10 @@
     s.setProperty('--bg-img', cfg.backgroundImage ? cssUrl(cfg.backgroundImage) : 'none');
     s.setProperty('--bg-size', cfg.backgroundSize);
     s.setProperty('--bg-pos', cfg.backgroundPosition);
-    s.setProperty('--aspect', cfg.aspect);
+    s.setProperty('--aspect', (cfg.aspect === 'auto') ? 'auto' : cfg.aspect);
     s.setProperty('--max-w', cfg.maxWidth);
     s.setProperty('--min-h', cfg.minHeight);
+    s.setProperty('--stage-r', cfg.stageRadius);
     s.setProperty('--env', cfg.envelopeColor);
     s.setProperty('--liner', cfg.linerColor);
     s.setProperty('--seal-c', cfg.sealColor);
@@ -601,7 +589,6 @@
     s.setProperty('--stamp-accent',
       (!cfg.stampAccent || cfg.stampAccent === 'auto') ? stampInk : cfg.stampAccent);
     s.setProperty('--wordmark', cssUrl(markSrc));
-    s.setProperty('--perf', cssUrl(perfMask()));
     s.setProperty('--name-c', resolveInk(cfg.nameColor, cfg.envelopeColor));
     // a flat envelope still needs its edge read against the stage
     s.setProperty('--paper-edge', luminance(cfg.envelopeColor) > 0.5
@@ -629,10 +616,22 @@
     s.setProperty('--t-cta', T.ctaIn + 'ms');
 
     /* interactions */
-    var self = this;
     stage.querySelector('.env-hit').addEventListener('click', function () { self.open(); });
     var rp = stage.querySelector('.replay');
     if (rp) rp.addEventListener('click', function () { self.reset(); self.start(true); });
+
+    /* a custom stamp image sets the stamp's proportions */
+    this.stampAR = 0;
+    if (cfg.stampImage) {
+      var probe = new Image();
+      probe.onload = function () {
+        if (probe.naturalWidth && probe.naturalHeight) {
+          self.stampAR = probe.naturalWidth / probe.naturalHeight;
+          self.applyVars();
+        }
+      };
+      probe.src = cfg.stampImage;
+    }
 
     /* card aspect: detect from the image unless pinned */
     if (cfg.cardAspect > 0) {
@@ -648,11 +647,33 @@
     }
   };
 
+  /* Resolve a CSS length that may be expressed in vh or px. */
+  function lengthPx(value, fallback) {
+    var v = String(value || '').trim();
+    var m = /^([\d.]+)(vh|px)?$/.exec(v);
+    if (!m) return fallback;
+    var n = parseFloat(m[1]);
+    if (m[2] === 'vh') return n / 100 * (global.innerHeight || 800);
+    return n;
+  }
+
   /* Geometry — recomputed on resize so everything scales cleanly */
   Invite.prototype.applyVars = function () {
     if (!this.stage) return;
     var cfg = this.cfg, s = this.stage.style;
     var W = this.stage.clientWidth || parseFloat(cfg.maxWidth) || 620;
+
+    // With aspect:'auto' the height is derived from the width — the frame stays
+    // a comfortable portrait shape on a narrow column and is capped by the
+    // viewport once the embed runs full width.
+    if (cfg.aspect === 'auto') {
+      var wanted = Math.min(W * 1.25, lengthPx(cfg.maxHeight, 700));
+      wanted = Math.max(wanted, lengthPx(cfg.minHeight, 420));
+      this.stage.style.height = Math.round(wanted) + 'px';
+    } else {
+      this.stage.style.height = '';
+    }
+
     var H = this.stage.clientHeight || W * 1.25;
 
     // Fit the envelope by whichever edge binds first, so a landscape A7 and a
@@ -686,6 +707,9 @@
     var finalS = finalH / cardH;
 
     s.setProperty('--w', W + 'px');
+    // Type scales off the smaller dimension so a full-width embed doesn't
+    // blow the RSVP button up to headline size on a wide layout.
+    s.setProperty('--u', Math.min(W, H * 0.78, 760).toFixed(1) + 'px');
     s.setProperty('--env-w', envW.toFixed(1) + 'px');
     s.setProperty('--env-h', envH.toFixed(1) + 'px');
     s.setProperty('--flap-h', flapH.toFixed(1) + 'px');
@@ -701,12 +725,22 @@
     // the card is anchored at the envelope's centre; nudge it to 45.5% of the frame
     s.setProperty('--card-final-y', (H * (0.455 - 0.52)).toFixed(1) + 'px');
 
-    // Stamp and postmark scale off the envelope's height so they stay in
-    // proportion whether the envelope is landscape or portrait.
-    var stampH = envH * 0.30;
+    // The stamp is the wordmark box plus an even margin on all four sides,
+    // so its proportions follow the artwork rather than a fixed rectangle.
+    var logoW = envW * 0.17;
+    var logoH = logoW / (this.stampAR || cfg.stampAspect || 1.465);
+    var pad = parseFloat(cfg.stampPadding);
+    if (!(pad > 0)) pad = Math.max(6, Math.min(16, envW * 0.025));
+    var stampW = logoW + pad * 2;
+    var stampH = logoH + pad * 2;
+    s.setProperty('--stamp-pad', pad.toFixed(1) + 'px');
+    s.setProperty('--stamp-w', stampW.toFixed(1) + 'px');
     s.setProperty('--stamp-h', stampH.toFixed(1) + 'px');
-    s.setProperty('--stamp-w', (stampH * 0.82).toFixed(1) + 'px');
-    s.setProperty('--pm-d', (envH * 0.30).toFixed(1) + 'px');
+    s.setProperty('--stamp-r', Math.max(3, Math.min(9, stampW * 0.06)).toFixed(1) + 'px');
+    var pmD = stampH * 1.25;
+    s.setProperty('--pm-d', pmD.toFixed(1) + 'px');
+    // centre the postmark on the stamp's own centre line
+    s.setProperty('--pm-top', (envH * 0.09 + (stampH - pmD) / 2).toFixed(1) + 'px');
     s.setProperty('--seal-d', (envH * 0.34 * cfg.sealScale).toFixed(1) + 'px');
   };
 
@@ -715,10 +749,11 @@
     if (global.ResizeObserver) {
       this.ro = new ResizeObserver(function () { self.applyVars(); });
       this.ro.observe(this.stage);
-    } else {
-      this._onResize = function () { self.applyVars(); };
-      global.addEventListener('resize', this._onResize);
     }
+    // A ResizeObserver never fires when only the viewport height changes, which
+    // the automatic height depends on, so listen for that as well.
+    this._onResize = function () { self.applyVars(); };
+    global.addEventListener('resize', this._onResize);
   };
 
   Invite.prototype.at = function (ms, fn) {
