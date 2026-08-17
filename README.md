@@ -88,7 +88,7 @@ but not the brand faces. Get the kit URL from whoever maintains trlibrary.com.
 
 ### Automatic ink
 
-`name-color`, `stamp-ink`, `stamp-accent`, `accent-text-color` and `prompt-color` all default
+`name-color`, `stamp-ink`, `accent-text-color` and `prompt-color` all default
 to `auto`: the embed measures the WCAG contrast of Dark Gray and White against the surface
 underneath each one and picks whichever reads better. Change the envelope to Night Sky and the
 address turns white on its own; switch the RSVP button to Sunset Yellow and its label goes dark.
@@ -116,8 +116,16 @@ the height is capped by `max-height` (88vh by default) so it never pushes the RS
 the fold. Typography scales off the smaller dimension, which keeps the button and prompt in
 proportion on a wide layout rather than growing to headline size.
 
-The stamp sits top left at the TRPL wordmark's own proportions with an even margin and softly
-rounded corners; the postmark sits top right, centred on the same line.
+The stamp carrying the TRPL wordmark sits top left, at the wordmark's own proportions with an
+even margin. Its edge is a real perforation: a closed path whose four sides carry a row of
+tangent semicircular teeth, with the leftover length becoming flat corners the way it does on a
+sheet of stamps. The tooth depth is derived from a target count — about eighteen along the long
+edge — rather than a share of the size, so it stays fine perforation on a phone instead of
+coarsening into scalloping. There is no outline, because on a real stamp the torn edge *is* the
+edge; the drop shadow follows the scalloped alpha rather than a rectangle.
+
+The circular postmark sits top right, sized to 1.25× the stamp's height and centred on the same
+line.
 
 ---
 
@@ -264,8 +272,9 @@ Only the values that differ from the defaults need to appear in the snippet.
 | `stamp-paper` | `#FFFFFF` | Postage stamp background |
 | `stamp-aspect` | `1.708` | Width ÷ height of the stamp artwork; auto-detected for a custom `stamp-image` |
 | `stamp-padding` | `auto` | Margin around the artwork; `auto` lands near 12px, or set e.g. `14px` |
+| `stamp-perf` | `auto` | Depth of one perforation tooth; `auto` holds ~18 teeth on the long edge |
+| `stamp-edge` | `none` | Optional hairline along the perforated edge; give it a colour to draw one |
 | `stamp-ink` | `auto` | TRPL wordmark colour; `auto` reads off the stamp paper |
-| `stamp-accent` | `auto` | Hairline border around the stamp |
 | `stamp-image` | — | Override the wordmark |
 
 ### Details panel
@@ -350,7 +359,7 @@ document.querySelector('#invite').addEventListener('trplinvite:opened', function
 - `prefers-reduced-motion: reduce` collapses every transition; the invitation simply appears.
 - The builder reports the live WCAG contrast ratio for the RSVP button colour pair.
 - `prompt-color: auto` keeps the prompt legible on both dark and light stages.
-- `name-color`, `stamp-ink`, `stamp-accent` and `accent-text-color` default to `auto`, so text
+- `name-color`, `stamp-ink` and `accent-text-color` default to `auto`, so text
   never ends up dark-on-dark when someone changes a colour. All twelve brand colours were
   checked in both roles and clear AA.
 

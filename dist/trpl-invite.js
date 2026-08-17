@@ -70,7 +70,8 @@
     stampImage:       '',            // optional override for the wordmark
     stampAspect:      1.708,         // width / height of the stamp artwork (TRPL wordmark)
     stampPadding:     'auto',        // margin around the artwork; 'auto' ~ 12px, or set e.g. '14px'
-    stampAccent:      'auto',        // hairline border around the stamp
+    stampPerf:        'auto',        // perforation tooth depth; 'auto' scales with the stamp
+    stampEdge:        'none',        // optional hairline on the perforated edge, or a colour
 
     // --- Recipient name ----------------------------------------------
     name:             '',            // hard-coded name; otherwise read from URL
@@ -409,13 +410,14 @@
       '.edge{position:absolute;top:0;right:0;bottom:0;left:0;border-radius:3px;pointer-events:none;',
       '  box-shadow:inset 0 0 0 1px var(--paper-edge);}',
 
-      /* The stamp is the wordmark's own proportions plus an even margin,
-         with softly rounded corners rather than a perforated edge. */
+      /* The paper itself is the generated perforated shape, so the element is
+         transparent and the padding clears both the perfs and the margin. */
       '.stamp{position:absolute;top:9%;left:7%;width:var(--stamp-w);height:var(--stamp-h);',
-      '  background:var(--stamp-paper);padding:var(--stamp-pad);',
+      '  background-image:var(--stamp-shape);background-size:100% 100%;',
+      '  background-repeat:no-repeat;',
+      '  padding:calc(var(--stamp-pad) + var(--stamp-bump));',
       '  display:flex;align-items:center;justify-content:center;',
-      '  border:1px solid var(--stamp-accent);border-radius:var(--stamp-r);',
-      '  box-shadow:0 1px 3px rgba(0,0,0,.22);}',
+      '  filter:drop-shadow(0 1px 2px rgba(0,0,0,.28));}',
       '.stamp-logo{position:relative;width:100%;height:100%;background-color:var(--stamp-ink);',
       '  -webkit-mask-image:var(--wordmark);mask-image:var(--wordmark);',
       '  -webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;',
@@ -614,6 +616,64 @@
     ].join('\n');
   }
 
+  /* ------------------------------------------------------------------ *
+   * Perforated stamp silhouette
+   *
+   * Drawn as one closed path — a rectangle whose four edges carry a row of
+   * tangent semicircular bumps, which is what a torn-from-the-sheet perforated
+   * edge actually looks like. Rendered as a background image rather than a
+   * mask so the paper can carry a hairline stroke, and so drop-shadow follows
+   * the scalloped alpha instead of a rectangle.
+   * ------------------------------------------------------------------ */
+  function stampShapeSvg(w, h, d, paper, edge) {
+    var innerW = w - 2 * d, innerH = h - 2 * d;
+    var nx = Math.max(2, Math.floor(innerW / (2 * d)));
+    var ny = Math.max(2, Math.floor(innerH / (2 * d)));
+    // whatever will not divide evenly becomes a flat corner, as on real perfs
+    var padX = (innerW - nx * 2 * d) / 2;
+    var padY = (innerH - ny * 2 * d) / 2;
+    var n = function (v) { return Math.round(v * 100) / 100; };
+    var p = ['M' + n(d) + ' ' + n(d)];
+    var i, c;
+
+    // top edge, left to right
+    p.push('H' + n(d + padX));
+    for (i = 0; i < nx; i++) {
+      c = d + padX + i * 2 * d + d;
+      p.push('A' + n(d) + ' ' + n(d) + ' 0 0 1 ' + n(c + d) + ' ' + n(d));
+    }
+    p.push('H' + n(w - d));
+    // right edge, top to bottom
+    p.push('V' + n(d + padY));
+    for (i = 0; i < ny; i++) {
+      c = d + padY + i * 2 * d + d;
+      p.push('A' + n(d) + ' ' + n(d) + ' 0 0 1 ' + n(w - d) + ' ' + n(c + d));
+    }
+    p.push('V' + n(h - d));
+    // bottom edge, right to left
+    p.push('H' + n(w - d - padX));
+    for (i = 0; i < nx; i++) {
+      c = w - d - padX - i * 2 * d - d;
+      p.push('A' + n(d) + ' ' + n(d) + ' 0 0 1 ' + n(c - d) + ' ' + n(h - d));
+    }
+    p.push('H' + n(d));
+    // left edge, bottom to top
+    p.push('V' + n(h - d - padY));
+    for (i = 0; i < ny; i++) {
+      c = h - d - padY - i * 2 * d - d;
+      p.push('A' + n(d) + ' ' + n(d) + ' 0 0 1 ' + n(d) + ' ' + n(c - d));
+    }
+    p.push('Z');
+
+    var stroke = edge
+      ? ' stroke="' + edge + '" stroke-width="1" stroke-linejoin="round"'
+      : '';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + n(w) + '" height="' + n(h) +
+      '" viewBox="0 0 ' + n(w) + ' ' + n(h) + '">' +
+      '<path d="' + p.join('') + '" fill="' + paper + '"' + stroke + '/></svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
   function postmarkSvg(text) {
     var t = escapeHtml(text || '');
     return '<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" ' +
@@ -810,8 +870,7 @@
     s.setProperty('--stamp-paper', cfg.stampPaper);
     var stampInk = resolveInk(cfg.stampInk, cfg.stampPaper);
     s.setProperty('--stamp-ink', stampInk);
-    s.setProperty('--stamp-accent',
-      (!cfg.stampAccent || cfg.stampAccent === 'auto') ? stampInk : cfg.stampAccent);
+
     s.setProperty('--wordmark', cssUrl(markSrc));
     s.setProperty('--name-c', resolveInk(cfg.nameColor, cfg.envelopeColor));
     // a flat envelope still needs its edge read against the stage
@@ -987,18 +1046,30 @@
     // the card is anchored at the envelope's centre; nudge it to 45.5% of the frame
     s.setProperty('--card-final-y', (H * (0.455 - 0.52)).toFixed(1) + 'px');
 
-    // The stamp is the wordmark box plus an even margin on all four sides,
-    // so its proportions follow the artwork rather than a fixed rectangle.
+    // The stamp is the wordmark box plus an even margin, then a ring of
+    // perforations outside that, so its proportions follow the artwork.
     var logoW = envW * 0.17;
-    var logoH = logoW / (this.stampAR || cfg.stampAspect || 1.465);
+    var logoH = logoW / (this.stampAR || cfg.stampAspect || 1.708);
     var pad = parseFloat(cfg.stampPadding);
     if (!(pad > 0)) pad = Math.max(6, Math.min(16, envW * 0.025));
-    var stampW = logoW + pad * 2;
-    var stampH = logoH + pad * 2;
+    var coreW = logoW + pad * 2;              // the printed paper
+    var coreH = logoH + pad * 2;
+    // Drive the tooth depth from a target count on the long edge rather than a
+    // share of the size: real perforation reads as many fine teeth (~18 along
+    // the long side), and a depth-based rule turns into scalloping when small.
+    var bump = parseFloat(cfg.stampPerf);
+    if (!(bump > 0)) {
+      bump = Math.max(1.8, Math.min(5, Math.max(coreW, coreH) / 36));
+    }
+    var stampW = coreW + bump * 2;
+    var stampH = coreH + bump * 2;
     s.setProperty('--stamp-pad', pad.toFixed(1) + 'px');
+    s.setProperty('--stamp-bump', bump.toFixed(1) + 'px');
     s.setProperty('--stamp-w', stampW.toFixed(1) + 'px');
     s.setProperty('--stamp-h', stampH.toFixed(1) + 'px');
-    s.setProperty('--stamp-r', Math.max(3, Math.min(9, stampW * 0.06)).toFixed(1) + 'px');
+    s.setProperty('--stamp-shape', cssUrl(stampShapeSvg(
+      stampW, stampH, bump, cfg.stampPaper,
+      (cfg.stampEdge && cfg.stampEdge !== 'none') ? cfg.stampEdge : '')));
     var pmD = stampH * 1.25;
     s.setProperty('--pm-d', pmD.toFixed(1) + 'px');
     // centre the postmark on the stamp's own centre line
