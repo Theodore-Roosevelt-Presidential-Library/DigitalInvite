@@ -106,6 +106,35 @@
   .tabs button[aria-selected=true]{background:var(--ink);color:#fff;border-color:var(--ink);}
   .note{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.65;}
   .note code{background:#e4e0d6;padding:1px 5px;border-radius:2px;}
+  /* --- details panel editor --- */
+  .ed-tools{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border:1px solid var(--line);
+    border-bottom:0;border-radius:4px 4px 0 0;background:#fff;}
+  .ed-tools button{min-width:30px;height:28px;border:1px solid transparent;background:none;
+    border-radius:3px;cursor:pointer;font-size:13px;color:var(--ink);padding:0 7px;
+    display:inline-flex;align-items:center;justify-content:center;}
+  .ed-tools button:hover{background:#EDEAE3;}
+  .ed-tools button[aria-pressed=true]{background:var(--ink);color:#fff;}
+  .ed-tools select{width:auto;font-size:12px;padding:3px 6px;height:28px;}
+  .ed-tools .sep{width:1px;background:var(--line);margin:2px 3px;}
+  .ed-tools b{font-family:Georgia,serif;}
+  .ed-tools i{font-family:Georgia,serif;}
+
+  #editor{border:1px solid var(--line);border-radius:0 0 4px 4px;background:#fff;
+    padding:14px 16px;min-height:220px;max-height:420px;overflow-y:auto;
+    font:15px/1.55 Georgia,'Iowan Old Style',serif;color:var(--ink);}
+  #editor:focus{outline:2px solid var(--sunset-orange);outline-offset:-1px;}
+  #editor h3,#editor h4{font-family:'Oswald','Arial Narrow',sans-serif;font-weight:600;
+    text-transform:uppercase;letter-spacing:.07em;line-height:1.1;margin:1.1em 0 .35em;}
+  #editor h3{font-size:19px;}
+  #editor h4{font-size:15px;opacity:.85;}
+  #editor>*:first-child{margin-top:0;}
+  #editor p{margin:0 0 .8em;}
+  #editor ul,#editor ol{margin:0 0 .8em 1.3em;padding:0;}
+  #editor li{margin-bottom:.3em;}
+  #editor a{color:#1B4532;text-decoration:underline;}
+  #editor hr{border:0;border-top:1px solid var(--line);margin:1.1em 0;}
+  #editor:empty::before{content:attr(data-placeholder);color:var(--muted);font-style:italic;}
+
   .flag{background:#FDF0E6;border-left:3px solid var(--sunset-orange);padding:9px 11px;
         font-size:11.5px;line-height:1.5;color:#5a4634;margin:0 0 14px;border-radius:0 3px 3px 0;}
 </style>
@@ -153,6 +182,55 @@
             <option value="_blank">New tab</option>
             <option value="_self">Same tab</option>
           </select>
+        </label>
+      </div>
+    </details>
+
+    <details>
+      <summary>Event details panel</summary>
+      <div class="fields">
+        <span class="hint" style="margin:0 0 10px">Optional. On a wide screen the invitation steps
+          left and this panel slides out beside it; on a phone a button turns the card over to show
+          it. Long copy scrolls inside the panel. Headings use Dharma Gothic, body copy ITC
+          Clearface — the editor previews both.</span>
+
+        <div class="ed-tools">
+          <select id="edBlock" title="Text style">
+            <option value="p">Paragraph</option>
+            <option value="h3">Heading 3</option>
+            <option value="h4">Heading 4</option>
+          </select>
+          <span class="sep"></span>
+          <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+          <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+          <button type="button" data-cmd="underline" title="Underline"><u>U</u></button>
+          <span class="sep"></span>
+          <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">&#8226; List</button>
+          <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+          <span class="sep"></span>
+          <button type="button" id="edLink" title="Add link">Link</button>
+          <button type="button" data-cmd="unlink" title="Remove link">Unlink</button>
+          <button type="button" id="edRule" title="Divider">&#8213;</button>
+          <span class="sep"></span>
+          <button type="button" id="edClear" title="Clear all">Clear</button>
+        </div>
+        <div id="editor" contenteditable="true" spellcheck="true"
+             data-placeholder="Add logistics, schedule, parking, what to wear…"></div>
+
+        <label style="margin-top:15px"><span class="lb">Panel background</span>
+          <span class="colorrow"><input type="color" data-c="detailsBackground" value="#FFFFFF"><input type="text" data-k="detailsBackground" value="#FFFFFF"></span>
+          <span class="swatches" data-for="detailsBackground"></span>
+          <span class="hint" id="panelInkNote"></span>
+        </label>
+        <label><span class="lb">Slide out after (ms)</span>
+          <input type="number" step="100" min="0" data-k="detailsDelay" value="900">
+          <span class="hint">Measured from the moment the invitation settles.</span>
+        </label>
+        <label><span class="lb">Button label <span style="font-weight:400;color:var(--muted)">(phones)</span></span>
+          <input type="text" data-k="detailsButtonText" value="More details">
+        </label>
+        <label><span class="lb">Close label <span style="font-weight:400;color:var(--muted)">(phones)</span></span>
+          <input type="text" data-k="detailsCloseText" value="Hide details">
         </label>
       </div>
     </details>
@@ -340,8 +418,22 @@
       <textarea id="out" readonly spellcheck="false"></textarea>
       <div class="pvbar" style="margin-top:10px">
         <button type="button" class="btn" id="copyBtn">Copy embed code</button>
+        <button type="button" class="btn ghost" id="downloadBtn">Download for hand-off</button>
+        <button type="button" class="btn ghost" id="shareBtn">Copy share link</button>
         <span id="copied" style="font-size:12px;color:var(--muted);"></span>
       </div>
+      <div class="pvbar" style="margin-top:2px">
+        <label style="margin:0;flex:1;min-width:240px">
+          <span class="lb">Name this invitation <span style="font-weight:400;color:var(--muted)">(used for the filename)</span></span>
+          <input type="text" id="projectName" value="Kennerly VIP opening">
+        </label>
+      </div>
+      <p class="note" style="margin-top:6px">
+        <strong>Download for hand-off</strong> saves a single HTML file: open it in a browser to
+        check the invitation works, and send it on — the embed snippet is marked inside for whoever
+        adds it to the site. <strong>Copy share link</strong> gives a URL that reopens this builder
+        with every setting and the details copy already filled in.
+      </p>
       <p class="note">
         Paste the snippet wherever the invitation should appear. Append
         <code>?name=Jane%20Doe</code> to the page URL sent to each guest and their name is
@@ -470,6 +562,309 @@
     });
   }
 
+  /* ------------------------------------------------------------------ *
+   * Details editor
+   * ------------------------------------------------------------------ */
+  var editor = document.getElementById('editor');
+  var ED_ALLOWED = {H3:1,H4:1,P:1,STRONG:1,B:1,EM:1,I:1,U:1,UL:1,OL:1,LI:1,A:1,BR:1,HR:1,SMALL:1};
+  /* SPAN is deliberately absent: with its attributes stripped it carries no
+     meaning and only leaves empty tags behind from Word and Quill. */
+  var ED_BLOCKED = {SCRIPT:1,STYLE:1,IFRAME:1,OBJECT:1,EMBED:1,LINK:1,META:1,FORM:1,
+                    INPUT:1,BUTTON:1,SELECT:1,TEXTAREA:1,SVG:1,MATH:1,TEMPLATE:1,NOSCRIPT:1,
+                    HEAD:1,TITLE:1,XML:1,COLGROUP:1,COL:1};
+
+  function safeHref(u){
+    var v = String(u||'').trim();
+    return /^(https?:|mailto:|tel:|\/|#)/i.test(v) ? v : '';
+  }
+
+  /* Same allowlist rebuild the embed uses, so what you see here is exactly
+     what ships. execCommand emits browser-specific markup (font tags, styles,
+     divs) and Word paste is worse, so the tree gets rebuilt rather than patched. */
+  function edSanitize(html){
+    var doc = document.implementation.createHTMLDocument('');
+    doc.body.innerHTML = String(html||'');
+    function copy(src, dest){
+      for (var n=src.firstChild; n; n=n.nextSibling){
+        if (n.nodeType===3){ dest.appendChild(doc.createTextNode(n.nodeValue)); continue; }
+        if (n.nodeType!==1) continue;
+        var tag=n.tagName.toUpperCase();
+        if (ED_BLOCKED[tag]) continue;
+        if (!ED_ALLOWED[tag]){ copy(n, dest); continue; }
+        var el=doc.createElement(tag.toLowerCase());
+        if (tag==='A'){
+          var href=safeHref(n.getAttribute('href'));
+          if (href) el.setAttribute('href', href);
+          if (n.getAttribute('target')==='_blank'){
+            el.setAttribute('target','_blank'); el.setAttribute('rel','noopener noreferrer');
+          }
+        }
+        copy(n, el);
+        dest.appendChild(el);
+      }
+    }
+    var out=doc.createElement('div');
+    copy(doc.body, out);
+    edUnnest(out);
+    return out.innerHTML;
+  }
+
+  /* execCommand emits <p><ul>…</ul></p> when you bullet a paragraph, which is
+     invalid; hoist block elements out so the markup we ship is well-formed. */
+  var ED_BLOCK = {P:1,UL:1,OL:1,HR:1,H3:1,H4:1};
+  function edUnnest(root){
+    for (var guard=0; guard<8; guard++){
+      var moved=false, paras=root.querySelectorAll('p');
+      for (var i=0;i<paras.length;i++){
+        var para=paras[i], ref=para, kids=[], c;
+        for (c=para.firstElementChild; c; c=c.nextElementSibling){
+          if (ED_BLOCK[c.tagName]) kids.push(c);
+        }
+        if (!kids.length) continue;
+        moved=true;
+        for (var j=0;j<kids.length;j++){
+          para.parentNode.insertBefore(kids[j], ref.nextSibling);
+          ref=kids[j];
+        }
+        if (!para.textContent.replace(/\s|\u00a0/g,'')) para.parentNode.removeChild(para);
+      }
+      if (!moved) break;
+    }
+    var all=root.querySelectorAll('p');
+    for (var k=0;k<all.length;k++){ if (!all[k].firstChild) all[k].parentNode.removeChild(all[k]); }
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Word / Google Docs paste
+   *
+   * Pasting from Word brings conditional comments, a stylesheet, mso-* classes,
+   * namespaced <o:p> tags, and lists that aren't lists — Word writes them as
+   * paragraphs with a literal bullet glyph. Stripping to plain text would be
+   * safe but throws away the author's bold, links and structure, so instead
+   * translate what Word means into clean markup, then run the usual allowlist.
+   * ------------------------------------------------------------------ */
+  function edRename(el, tag){
+    var n = el.ownerDocument.createElement(tag);
+    while (el.firstChild) n.appendChild(el.firstChild);
+    el.parentNode.replaceChild(n, el);
+    return n;
+  }
+
+  var ED_BULLET = /^[\s\u00a0]*[\u2022\u00b7\u25aa\u2219\u25e6\u2023\u2043\-\u2013]([\s\u00a0]+)/;
+  var ED_NUMBER = /^[\s\u00a0]*(\d+)[.)]([\s\u00a0]+)/;
+
+  var ED_BULLET_CUT = /^[\s\u00a0]*[\u2022\u00b7\u25aa\u2219\u25e6\u2023\u2043\-\u2013][\s\u00a0]*/;
+  var ED_NUMBER_CUT = /^[\s\u00a0]*\d+[.)][\s\u00a0]*/;
+
+  function edStripMarker(el, kind){
+    var walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+    var nodes = [], n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    var joined = nodes.map(function(t){ return t.nodeValue; }).join('');
+    var m = (kind === 'ul' ? ED_BULLET_CUT : ED_NUMBER_CUT).exec(joined);
+    if (!m) return;
+    var remove = m[0].length;
+    for (var i = 0; i < nodes.length && remove > 0; i++){
+      var len = nodes[i].nodeValue.length;
+      if (len <= remove){ nodes[i].nodeValue = ''; remove -= len; }
+      else { nodes[i].nodeValue = nodes[i].nodeValue.slice(remove); remove = 0; }
+    }
+  }
+
+  /* Word emits each list item as its own paragraph. Group consecutive ones
+     back into a real <ul>/<ol>. */
+  function edRebuildLists(root){
+    var kids = [].slice.call(root.children), i = 0;
+    while (i < kids.length){
+      var el = kids[i];
+      var txt = (el.textContent || '').replace(/\u00a0/g,' ');
+      var kind = el.tagName === 'P' && ED_BULLET.test(txt) ? 'ul'
+               : el.tagName === 'P' && ED_NUMBER.test(txt) ? 'ol' : null;
+      if (!kind){ i++; continue; }
+      var re = kind === 'ul' ? ED_BULLET : ED_NUMBER;
+      var list = root.ownerDocument.createElement(kind);
+      el.parentNode.insertBefore(list, el);
+      while (i < kids.length){
+        var item = kids[i];
+        var itxt = (item.textContent || '').replace(/\u00a0/g,' ');
+        if (item.tagName !== 'P' || !re.test(itxt)) break;
+        edStripMarker(item, kind);
+        var li = root.ownerDocument.createElement('li');
+        while (item.firstChild) li.appendChild(item.firstChild);
+        list.appendChild(li);
+        item.parentNode.removeChild(item);
+        i++;
+      }
+    }
+  }
+
+  function edFromPastedHtml(html){
+    var cleaned = String(html)
+      .replace(/<!--[\s\S]*?-->/g, '')             // conditional comments, fragment markers
+      .replace(/<\?[\s\S]*?\?>/g, '')              // xml prologue
+      .replace(/<\/?[a-z0-9]+:[^>]*>/gi, '');       // <o:p>, <w:sdt>, <st1:place> …
+
+    var doc = document.implementation.createHTMLDocument('');
+    doc.body.innerHTML = cleaned;
+
+    // Google Docs wraps the whole selection in <b style="font-weight:normal">.
+    // Left alone, stripping the style turns every word bold.
+    [].forEach.call(doc.body.querySelectorAll('b[style],strong[style],span[style]'), function(el){
+      if (/(^|;)\s*font-weight\s*:\s*normal/i.test(el.getAttribute('style') || '')){
+        while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
+        el.parentNode.removeChild(el);
+      }
+    });
+
+    // Both editors express emphasis as inline style on a span. Promote it to a
+    // real tag before the styles are stripped, or the emphasis is simply lost.
+    [].forEach.call(doc.body.querySelectorAll('[style]'), function(el){
+      var st = (el.getAttribute('style') || '').toLowerCase();
+      var wraps = [];
+      if (/(^|;)\s*font-weight\s*:\s*(bold|[6-9]00)/.test(st)) wraps.push('strong');
+      if (/(^|;)\s*font-style\s*:\s*italic/.test(st)) wraps.push('em');
+      if (/(^|;)\s*text-decoration[^;]*underline/.test(st)) wraps.push('u');
+      if (!wraps.length || !el.firstChild) return;
+      var inner = doc.createElement(wraps[0]);
+      var cursor = inner;
+      for (var i = 1; i < wraps.length; i++){
+        var next = doc.createElement(wraps[i]);
+        cursor.appendChild(next);
+        cursor = next;
+      }
+      while (el.firstChild) cursor.appendChild(el.firstChild);
+      el.appendChild(inner);
+    });
+
+    // the panel supports two heading levels, so fold the rest into them
+    [].forEach.call(doc.body.querySelectorAll('h1,h2'), function(el){ edRename(el,'h3'); });
+    [].forEach.call(doc.body.querySelectorAll('h5,h6'), function(el){ edRename(el,'h4'); });
+    // table rows would otherwise run together into one block of text
+    [].forEach.call(doc.body.querySelectorAll('tr'), function(el){ edRename(el,'p'); });
+    // Docs and Word both use divs where they mean paragraphs
+    [].forEach.call(doc.body.querySelectorAll('div'), function(el){
+      if (!el.querySelector('p,div,ul,ol,h1,h2,h3,h4,h5,h6,table,tr')) edRename(el,'p');
+    });
+
+    edRebuildLists(doc.body);
+
+    // Google Docs puts a <p> inside every <li>, which double-spaces the list
+    [].forEach.call(doc.body.querySelectorAll('li'), function(li){
+      var paras = li.querySelectorAll(':scope > p');
+      for (var i = 0; i < paras.length; i++){
+        var para = paras[i];
+        if (i > 0) li.insertBefore(doc.createElement('br'), para);
+        while (para.firstChild) li.insertBefore(para.firstChild, para);
+        li.removeChild(para);
+      }
+    });
+
+    // Word pads with non-breaking spaces and empty paragraphs
+    [].forEach.call(doc.body.querySelectorAll('p,h3,h4,li'), function(el){
+      if (!/\S/.test((el.textContent||'').replace(/\u00a0/g,' ')) && !el.querySelector('a,br')){
+        el.parentNode.removeChild(el);
+      }
+    });
+    return doc.body.innerHTML.replace(/\u00a0/g, ' ');
+  }
+
+  function edPlainToHtml(text){
+    return String(text).split(/\r?\n\s*\r?\n/).map(function(block){
+      var esc = block.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return '<p>' + esc.replace(/\r?\n/g,'<br>') + '</p>';
+    }).join('');
+  }
+
+  /* Readable indentation for the snippet */
+  function edPretty(html){
+    if (!html) return '';
+    var doc = document.implementation.createHTMLDocument('');
+    doc.body.innerHTML = html;
+    var lines = [];
+    [].forEach.call(doc.body.children, function(el){
+      lines.push('    ' + el.outerHTML);
+    });
+    return lines.join('\n');
+  }
+
+  function edHtml(){ return edSanitize(editor.innerHTML).trim(); }
+
+  try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch(e){}
+
+  document.querySelectorAll('.ed-tools button[data-cmd]').forEach(function(btn){
+    btn.addEventListener('mousedown', function(e){ e.preventDefault(); });
+    btn.addEventListener('click', function(){
+      editor.focus();
+      document.execCommand(btn.dataset.cmd, false, null);
+      edRefresh();
+    });
+  });
+
+  document.getElementById('edBlock').addEventListener('change', function(){
+    editor.focus();
+    document.execCommand('formatBlock', false, this.value);
+    edRefresh();
+  });
+
+  document.getElementById('edLink').addEventListener('click', function(){
+    editor.focus();
+    var url = window.prompt('Link to (https://…, mailto:… or /page)');
+    if (url === null) return;
+    var safe = safeHref(url);
+    if (!safe){ window.alert('That link was not a recognised address, so nothing was added.'); return; }
+    document.execCommand('createLink', false, safe);
+    edRefresh();
+  });
+
+  document.getElementById('edRule').addEventListener('click', function(){
+    editor.focus();
+    document.execCommand('insertHTML', false, '<hr>');
+    edRefresh();
+  });
+
+  document.getElementById('edClear').addEventListener('click', function(){
+    if (!editor.textContent.trim() || window.confirm('Clear the whole details panel?')){
+      editor.innerHTML = '';
+      edRefresh();
+    }
+  });
+
+  editor.addEventListener('paste', function(e){
+    e.preventDefault();
+    var dt = e.clipboardData || window.clipboardData;
+    var html = dt ? dt.getData('text/html') : '';
+    var out;
+    if (html && /\S/.test(html)){
+      out = edSanitize(edFromPastedHtml(html));
+    }
+    if (!out || !/\S/.test(out.replace(/<[^>]*>/g,''))){
+      out = edPlainToHtml(dt ? dt.getData('text/plain') : '');
+    }
+    document.execCommand('insertHTML', false, out);
+    edRefresh();
+  });
+
+  function edRefresh(){
+    var states = {bold:'bold', italic:'italic', underline:'underline',
+                  insertUnorderedList:'insertUnorderedList', insertOrderedList:'insertOrderedList'};
+    Object.keys(states).forEach(function(cmd){
+      var btn = document.querySelector('.ed-tools button[data-cmd="'+cmd+'"]');
+      if (!btn) return;
+      var on = false;
+      try { on = document.queryCommandState(cmd); } catch(e){}
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var block = '';
+    try { block = (document.queryCommandValue('formatBlock')||'').toLowerCase(); } catch(e){}
+    var sel = document.getElementById('edBlock');
+    sel.value = (block === 'h3' || block === 'h4') ? block : 'p';
+    schedule();
+  }
+
+  editor.addEventListener('input', edRefresh);
+  editor.addEventListener('keyup', edRefresh);
+  editor.addEventListener('mouseup', edRefresh);
+
   /* ---------- config ---------- */
   function collect(){
     var cfg = {};
@@ -487,6 +882,7 @@
       cfg.accentTextColor = 'auto';
     }
     cfg.stampAccent = 'auto';
+    cfg.detailsHtml = edHtml();
     return cfg;
   }
 
@@ -566,6 +962,9 @@
         (n === '#FFFFFF' ? 'White' : 'Dark Gray') + ' on this envelope.';
       stampNote.textContent = 'Wordmark: ' +
         (t === '#FFFFFF' ? 'White' : 'Dark Gray') + ', chosen from the stamp paper.';
+      var pn = document.getElementById('panelInkNote');
+      if (pn) pn.textContent = 'Panel text: ' +
+        (autoInk(cfg.detailsBackground) === '#FFFFFF' ? 'White' : 'Dark Gray') + '.';
     } else {
       nameNote.textContent = '';
       stampNote.textContent = '';
@@ -628,15 +1027,27 @@
 
   function writeCode(cfg){
     var o = diff(cfg);
+    var details = o.detailsHtml || '';
+    delete o.detailsHtml;   // travels as a child div, not an attribute
+
     if (mode === 'html'){
       var lines = ['<!-- TRPL Digital Invite -->', '<div data-trpl-invite'];
       Object.keys(o).forEach(function(k){
         lines.push('     data-' + kebab(k) + '="' + attrEsc(o[k]) + '"');
       });
-      lines[lines.length-1] += '></div>';
+      if (details){
+        lines[lines.length-1] += '>';
+        lines.push('  <div data-trpl-details>');
+        lines.push(edPretty(details));
+        lines.push('  </div>');
+        lines.push('</div>');
+      } else {
+        lines[lines.length-1] += '></div>';
+      }
       lines.push('<script src="' + HOST + '/dist/trpl-invite.js" defer><' + '/script>');
       out.value = lines.join('\n');
     } else {
+      if (details) o.detailsHtml = details;
       out.value =
         '<div id="invite"></div>\n' +
         '<script src="' + HOST + '/dist/trpl-invite.js"><' + '/script>\n' +
@@ -675,6 +1086,134 @@
     try { return document.execCommand('copy'); } catch(e){ return false; }
   }
 
+  /* ------------------------------------------------------------------ *
+   * Hand-off: a file to send on, and a link that restores this build
+   * ------------------------------------------------------------------ */
+  function slug(str){
+    return String(str||'').toLowerCase().replace(/[^a-z0-9]+/g,'-')
+      .replace(/^-+|-+$/g,'').slice(0,60) || 'trpl-invite';
+  }
+
+  /* base64url so the config survives being pasted into chat, email or a CMS */
+  function packConfig(){
+    var payload = {
+      v: 1,
+      name: document.getElementById('projectName').value,
+      autoInk: document.getElementById('autoInk').checked,
+      cfg: diff(collect()),
+      details: edHtml()
+    };
+    var json = JSON.stringify(payload);
+    var b64 = btoa(unescape(encodeURIComponent(json)));
+    return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+
+  function unpackConfig(token){
+    var b64 = String(token).replace(/-/g,'+').replace(/_/g,'/');
+    while (b64.length % 4) b64 += '=';
+    return JSON.parse(decodeURIComponent(escape(atob(b64))));
+  }
+
+  function applyConfig(payload){
+    if (!payload || payload.v !== 1) return false;
+    form.reset();
+    if (payload.name) document.getElementById('projectName').value = payload.name;
+    document.getElementById('autoInk').checked = payload.autoInk !== false;
+    Object.keys(payload.cfg || {}).forEach(function(k){
+      var el = form.querySelector('[data-k="'+k+'"]');
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!payload.cfg[k];
+      else el.value = payload.cfg[k];
+      var picker = form.querySelector('input[data-c="'+k+'"]');
+      if (picker && /^#[0-9a-f]{6}$/i.test(payload.cfg[k])) picker.value = payload.cfg[k];
+    });
+    // colour pickers with no override must fall back to the default, not stale state
+    form.querySelectorAll('input[data-c]').forEach(function(pk){
+      var t = form.querySelector('input[type=text][data-k="'+pk.dataset.c+'"]');
+      if (t && /^#[0-9a-f]{6}$/i.test(t.value)) pk.value = t.value;
+    });
+    editor.innerHTML = edSanitize(payload.details || '');
+    return true;
+  }
+
+  function shareUrl(){
+    var base = location.origin + location.pathname;
+    return base + '?config=' + packConfig();
+  }
+
+  function standalonePage(){
+    var cfg = collect();
+    var label = document.getElementById('projectName').value || 'TRPL invitation';
+    var snippet = out.value;
+    // the code tab may be showing the JS form; the file always ships the HTML one
+    var wasMode = mode;
+    if (mode !== 'html'){ mode = 'html'; writeCode(cfg); snippet = out.value; mode = wasMode; writeCode(cfg); }
+    return [
+      '<!DOCTYPE html>',
+      '<html lang="en">',
+      '<head>',
+      '<meta charset="utf-8">',
+      '<meta name="viewport" content="width=device-width,initial-scale=1">',
+      '<title>' + attrEsc(label) + ' — TRPL Digital Invite</title>',
+      '<!--',
+      '  Built with the TRPL Digital Invite builder',
+      '  ' + HOST,
+      '',
+      '  Name    : ' + label,
+      '  Created : ' + new Date().toISOString().slice(0,16).replace('T',' ') + ' UTC',
+      '',
+      '  Open this file in a browser to check the invitation.',
+      '  To reopen it in the builder and change anything:',
+      '  ' + shareUrl(),
+      '-->',
+      '<style>',
+      '  html,body{margin:0;background:' + cfg.backgroundColor + ';}',
+      '</style>',
+      '</head>',
+      '<body>',
+      '',
+      '<!-- ================= COPY FROM HERE ================= -->',
+      snippet,
+      '<!-- ================== TO HERE ======================= -->',
+      '',
+      '</body>',
+      '</html>',
+      ''
+    ].join('\n');
+  }
+
+  function saveFile(filename, text, type){
+    var blob = new Blob([text], {type: type || 'text/plain;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+
+  document.getElementById('downloadBtn').addEventListener('click', function(){
+    var name = slug(document.getElementById('projectName').value);
+    saveFile(name + '-trpl-invite.html', standalonePage(), 'text/html;charset=utf-8');
+    var n = document.getElementById('copied');
+    n.textContent = 'Downloaded ' + name + '-trpl-invite.html';
+    setTimeout(function(){ n.textContent = ''; }, 4000);
+  });
+
+  document.getElementById('shareBtn').addEventListener('click', function(){
+    var url = shareUrl();
+    var n = document.getElementById('copied');
+    function done(ok){
+      n.textContent = ok ? 'Share link copied.' : 'Could not copy — the link is in the code box.';
+      if (!ok){ out.value = url; out.select(); }
+      setTimeout(function(){ n.textContent = ''; if (!ok) writeCode(collect()); }, 4000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(function(){ done(true); }, function(){ done(false); });
+    } else { done(false); }
+  });
+
   document.getElementById('replayBtn').addEventListener('click', render);
   document.getElementById('resetBtn').addEventListener('click', function(){
     form.reset();
@@ -684,6 +1223,25 @@
     });
     render();
   });
+
+  var incoming = new URLSearchParams(location.search).get('config');
+  var restored = false;
+  if (incoming){
+    try { restored = applyConfig(unpackConfig(incoming)); }
+    catch (e) { restored = false; }
+  }
+  if (!restored){
+    editor.innerHTML =
+      '<h3>Getting Here</h3>' +
+      '<p>The Library sits on the bluff above Medora, North Dakota, a ten-minute walk from ' +
+      'downtown and forty minutes east of Dickinson.</p>' +
+      '<h3>The Evening</h3>' +
+      '<ul><li><strong>5:30 PM</strong> — Reception on the Breezeway</li>' +
+      '<li><strong>6:15 PM</strong> — Remarks and Q&amp;A</li>' +
+      '<li><strong>7:00 PM</strong> — Exhibition opens</li></ul>' +
+      '<h3>Questions</h3>' +
+      '<p>Write to <a href="mailto:events@trlibrary.com">events@trlibrary.com</a>.</p>';
+  }
 
   render();
 })();

@@ -105,6 +105,21 @@
     accentColor:      '#FC924E',     // TRPL Sunset Orange
     accentTextColor:  'auto',        // 'auto' = Dark Gray or White, whichever reads on the button
 
+    // --- Details panel -------------------------------------------------
+    // Supply the copy as a child of the host element:
+    //   <div data-trpl-invite ...><div data-trpl-details><h3>..</h3></div></div>
+    // Wide screens slide it out beside the invitation; narrow screens offer a
+    // button that turns the card over to reveal it.
+    detailsHtml:      '',            // or pass the markup directly
+    detailsSelector:  '[data-trpl-details]',
+    detailsDelay:     900,           // ms after the card settles before it slides out
+    detailsBreakpoint: 700,          // below this width the card flips instead
+    detailsBackground: '#FFFFFF',
+    detailsTextColor: 'auto',
+    detailsPadding:   'auto',
+    detailsButtonText: 'More details',
+    detailsCloseText: 'Hide details',
+
     // --- Behaviour ----------------------------------------------------
     replay:           true,
     replayText:       'Replay',
@@ -113,7 +128,8 @@
   };
 
   var NUMERIC = ['envelopeAspect', 'envelopeScale', 'flapDepth', 'sealScale',
-                 'cardAspect', 'autoOpen', 'stampAspect'];
+                 'cardAspect', 'autoOpen', 'stampAspect', 'detailsDelay',
+                 'detailsBreakpoint'];
   var BOOLEAN = ['vignette', 'replay', 'openOnce'];
 
   /* Animation timeline (ms) */
@@ -127,7 +143,8 @@
     cardDelay:   260,
     cardRise:    850,
     cardSettle:  900,
-    ctaIn:       450
+    ctaIn:       450,
+    panel:       700
   };
 
   /* ------------------------------------------------------------------ *
@@ -225,6 +242,106 @@
 
   function resolveInk(value, bg) {
     return (!value || value === 'auto') ? autoInk(bg) : value;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Details-panel sanitiser
+   *
+   * The markup comes from a div on the host page, so it is first-party —
+   * but that div is often filled from a CMS field, which is a lower trust
+   * level than the page itself. Rebuilding the tree from an allowlist means
+   * nothing unexpected can survive, rather than trying to blacklist.
+   * ------------------------------------------------------------------ */
+  var DETAILS_ALLOWED = {
+    H3: 1, H4: 1, P: 1, STRONG: 1, B: 1, EM: 1, I: 1, U: 1,
+    UL: 1, OL: 1, LI: 1, A: 1, BR: 1, HR: 1, SMALL: 1
+  };
+  // hand-written markup often reaches for h1/h2; the panel has two levels
+  var DETAILS_REMAP = { H1: 'h3', H2: 'h3', H5: 'h4', H6: 'h4', DIV: 'p' };
+  var DETAILS_BLOCKED = {
+    SCRIPT: 1, STYLE: 1, IFRAME: 1, OBJECT: 1, EMBED: 1, LINK: 1, META: 1,
+    BASE: 1, FORM: 1, INPUT: 1, BUTTON: 1, SELECT: 1, TEXTAREA: 1,
+    SVG: 1, MATH: 1, TEMPLATE: 1, NOSCRIPT: 1, AUDIO: 1, VIDEO: 1,
+    HEAD: 1, TITLE: 1, XML: 1
+  };
+
+  function sanitizeDetails(html) {
+    var doc = document.implementation.createHTMLDocument('');
+    doc.body.innerHTML = String(html || '');
+
+    function copyInto(src, dest) {
+      for (var n = src.firstChild; n; n = n.nextSibling) {
+        if (n.nodeType === 3) {                     // text
+          dest.appendChild(doc.createTextNode(n.nodeValue));
+          continue;
+        }
+        if (n.nodeType !== 1) continue;             // comments, etc.
+        var tag = n.tagName.toUpperCase();
+        if (DETAILS_BLOCKED[tag]) continue;         // drop it and its subtree
+        var as = DETAILS_REMAP[tag];
+        if (!as && !DETAILS_ALLOWED[tag]) {         // unwrap, keep the words
+          copyInto(n, dest);
+          continue;
+        }
+        var el = doc.createElement(as || tag.toLowerCase());
+        if (tag === 'A') {
+          var href = safeUrl(n.getAttribute('href'));
+          if (href) el.setAttribute('href', href);
+          if (n.getAttribute('target') === '_blank') {
+            el.setAttribute('target', '_blank');
+            el.setAttribute('rel', 'noopener noreferrer');
+          }
+        }
+        copyInto(n, el);
+        dest.appendChild(el);
+      }
+    }
+
+    var out = doc.createElement('div');
+    copyInto(doc.body, out);
+    unnestBlocks(out);
+    return out.innerHTML;
+  }
+
+  /* execCommand happily produces <p><ul>…</ul></p> when you bullet a
+     paragraph. That is invalid, and browsers repair it inconsistently, so
+     hoist any block element out of its paragraph. */
+  var DETAILS_BLOCK = { P: 1, UL: 1, OL: 1, HR: 1, H3: 1, H4: 1 };
+  function unnestBlocks(root) {
+    var guard = 0;
+    for (;;) {
+      var moved = false;
+      var paras = root.querySelectorAll('p');
+      for (var i = 0; i < paras.length; i++) {
+        var para = paras[i], ref = para, kids = [], c;
+        for (c = para.firstElementChild; c; c = c.nextElementSibling) {
+          if (DETAILS_BLOCK[c.tagName]) kids.push(c);
+        }
+        if (!kids.length) continue;
+        moved = true;
+        for (var j = 0; j < kids.length; j++) {
+          para.parentNode.insertBefore(kids[j], ref.nextSibling);
+          ref = kids[j];
+        }
+        if (!para.textContent.replace(/\s|\u00a0/g, '')) para.parentNode.removeChild(para);
+      }
+      if (!moved || ++guard > 8) break;
+    }
+    // a <p> inside an <li> double-spaces the list
+    var lis = root.querySelectorAll('li');
+    for (var m = 0; m < lis.length; m++) {
+      var inner = lis[m].getElementsByTagName('p');
+      while (inner.length) {
+        var para = inner[0];
+        while (para.firstChild) lis[m].insertBefore(para.firstChild, para);
+        para.parentNode.removeChild(para);
+      }
+    }
+    // drop paragraphs left completely empty
+    var all = root.querySelectorAll('p');
+    for (var k = 0; k < all.length; k++) {
+      if (!all[k].firstChild) all[k].parentNode.removeChild(all[k]);
+    }
   }
 
   function prefersReducedMotion() {
@@ -363,32 +480,96 @@
 
       /* ---------- the card ---------- */
       /* the card lives inside .env so it can sit in the throat, behind the pocket */
+      /* `.card` owns position and movement only. The clip and the rounded
+         corners live on the faces, because clip-path and overflow both force
+         transform-style back to flat and would kill the flip. */
       '.card{position:absolute;left:50%;top:50%;width:var(--card-w);height:var(--card-h);',
       '  z-index:4;transform-origin:50% 50%;',
       '  transform:translate(-50%,calc(-50% + var(--card-tuck)));',
-      '  box-shadow:0 8px 20px rgba(0,0,0,.32);border-radius:var(--card-r);overflow:hidden;background:#fff;',
+      '  transition:transform var(--t-cardrise) cubic-bezier(.28,.7,.3,1);}',
+      '.card-flip{position:absolute;top:0;right:0;bottom:0;left:0;',
+      '  transform-style:preserve-3d;transform:rotateY(0deg);',
+      '  transition:transform var(--t-flip) cubic-bezier(.45,.05,.25,1);}',
+      '.stage.card-flipped .card-flip{transform:rotateY(180deg);}',
+      '.card-face{position:absolute;top:0;right:0;bottom:0;left:0;',
+      '  backface-visibility:hidden;-webkit-backface-visibility:hidden;',
+      '  border-radius:var(--card-r);overflow:hidden;background:#fff;',
+      '  box-shadow:0 8px 20px rgba(0,0,0,.32);',
       /* A portrait card cannot fit a landscape envelope, so everything below
          the throat is clipped away. The clip eases in lockstep with the rise. */
       '  -webkit-clip-path:inset(0 0 var(--card-clip) 0);clip-path:inset(0 0 var(--card-clip) 0);',
-      '  transition:transform var(--t-cardrise) cubic-bezier(.28,.7,.3,1),',
-      '             clip-path var(--t-cardrise) cubic-bezier(.28,.7,.3,1),',
-      '             -webkit-clip-path var(--t-cardrise) cubic-bezier(.28,.7,.3,1);}',
-      '.card img{display:block;width:100%;height:100%;object-fit:cover;}',
+      '  transition:clip-path var(--t-cardrise) cubic-bezier(.28,.7,.3,1),',
+      '             -webkit-clip-path var(--t-cardrise) cubic-bezier(.28,.7,.3,1),',
+      '             box-shadow var(--t-settle) ease;}',
+      '.card-face.front{transform:rotateY(0deg) translateZ(0.6px);}',
+      '.card-face.back{transform:rotateY(180deg) translateZ(0.6px);',
+      '  background:var(--panel-bg);color:var(--panel-fg);}',
+      '.card-face img{display:block;width:100%;height:100%;object-fit:cover;}',
       /* once the flap is up and out of the way the card comes forward */
       '.stage.card-out .card{z-index:12;',
-      '  transform:translate(-50%,calc(-50% + var(--card-tuck) - var(--card-lift)));',
-      '  -webkit-clip-path:inset(0 0 var(--card-clip-out) 0);clip-path:inset(0 0 var(--card-clip-out) 0);}',
+      '  transform:translate(-50%,calc(-50% + var(--card-tuck) - var(--card-lift)));}',
+      '.stage.card-out .card-face{-webkit-clip-path:inset(0 0 var(--card-clip-out) 0);',
+      '  clip-path:inset(0 0 var(--card-clip-out) 0);}',
       /* the envelope withdraws; the card is left holding the frame */
       '.stage.card-final .throat,.stage.card-final .pocket{transform:translateY(30%);opacity:0;',
       '  transition:transform var(--t-settle) cubic-bezier(.4,0,.2,1),opacity calc(var(--t-settle) * .75) ease;}',
       '.stage.card-final .flap{opacity:0;transition:opacity calc(var(--t-settle) * .55) ease;}',
       '.stage.card-final .card{z-index:20;',
-      '  -webkit-clip-path:inset(0 0 0 0);clip-path:inset(0 0 0 0);',
-      '  transition:transform var(--t-settle) cubic-bezier(.22,.8,.26,1),',
-      '             clip-path var(--t-settle) ease,-webkit-clip-path var(--t-settle) ease,',
+      '  transition:transform var(--t-settle) cubic-bezier(.22,.8,.26,1);',
+      '  transform:translate(-50%,-50%) translateY(var(--card-final-y)) scale(var(--card-final-s));}',
+      '.stage.card-final .card-face{-webkit-clip-path:inset(0 0 0 0);clip-path:inset(0 0 0 0);',
+      '  transition:clip-path var(--t-settle) ease,-webkit-clip-path var(--t-settle) ease,',
       '             box-shadow var(--t-settle) ease;',
-      '  transform:translate(-50%,-50%) translateY(var(--card-final-y)) scale(var(--card-final-s));',
       '  box-shadow:0 20px 46px rgba(0,0,0,.42);}',
+      /* wide layout: the card steps left to make room for the panel */
+      '.stage.card-final.details-out .card{',
+      '  transform:translate(-50%,-50%) translateY(var(--card-final-y))',
+      '            translateX(var(--card-shift)) scale(var(--card-final-s));',
+      '  transition:transform var(--t-panel) cubic-bezier(.22,.8,.26,1);}',
+
+      /* ---------- details panel ---------- */
+      '.details{position:absolute;left:50%;top:var(--panel-y);z-index:18;',
+      '  width:var(--panel-w);height:var(--panel-h);',
+      '  transform:translate(-50%,-50%) translateX(var(--card-shift));',
+      '  opacity:0;pointer-events:none;background:var(--panel-bg);color:var(--panel-fg);',
+      '  border-radius:var(--card-r);overflow:hidden;box-shadow:0 20px 46px rgba(0,0,0,.42);',
+      '  transition:transform var(--t-panel) cubic-bezier(.22,.8,.26,1),',
+      '             opacity calc(var(--t-panel) * .7) ease;}',
+      '.stage.details-out .details{opacity:1;pointer-events:auto;',
+      '  transform:translate(-50%,-50%) translateX(var(--panel-x));}',
+      '.stage.narrow .details{display:none;}',
+
+      '.details-body{height:100%;overflow-y:auto;overflow-x:hidden;padding:var(--panel-pad);',
+      '  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;}',
+      '.details-body::-webkit-scrollbar{width:8px;}',
+      '.details-body::-webkit-scrollbar-thumb{background:currentColor;opacity:.25;border-radius:4px;}',
+
+      /* Dharma Gothic for headings, all caps per the brand guide;
+         ITC Clearface for everything the guest actually reads. */
+      '.details-body h3,.details-body h4{font-family:var(--display-font);font-weight:600;',
+      '  text-transform:uppercase;letter-spacing:.07em;line-height:1.08;margin:0 0 .45em;}',
+      '.details-body h3{font-size:calc(var(--u) * .038);}',
+      '.details-body h4{font-size:calc(var(--u) * .028);opacity:.85;}',
+      '.details-body *+h3,.details-body *+h4{margin-top:1.35em;}',
+      '.details-body p,.details-body li{font-family:var(--body-font);',
+      '  font-size:calc(var(--u) * .026);line-height:1.55;margin:0 0 .85em;}',
+      '.details-body ul,.details-body ol{margin:0 0 .85em 1.25em;padding:0;}',
+      '.details-body li{margin-bottom:.35em;}',
+      '.details-body a{color:inherit;text-decoration:underline;text-underline-offset:2px;}',
+      '.details-body a:hover{text-decoration-thickness:2px;}',
+      '.details-body strong,.details-body b{font-weight:700;}',
+      '.details-body hr{border:0;border-top:1px solid currentColor;opacity:.22;margin:1.3em 0;}',
+      '.details-body small{font-size:.82em;opacity:.75;}',
+      '.details-body>*:last-child{margin-bottom:0;}',
+
+      /* narrow layout: a button turns the card over instead */
+      '.details-btn{border:1px solid var(--accent);background:none;color:var(--prompt-c);',
+      '  font-family:var(--display-font);letter-spacing:.14em;text-transform:uppercase;',
+      '  font-size:calc(var(--u) * .030);padding:.55em 1.5em .45em;border-radius:2px;',
+      '  cursor:pointer;display:none;}',
+      '.stage.narrow.has-details .details-btn{display:inline-block;}',
+      '.details-btn:hover{background:var(--accent);color:var(--accent-t);}',
+      '.details-btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}',
 
       /* ---------- prompt + CTA ---------- */
       '.prompt{position:absolute;left:8%;right:8%;bottom:5.5%;z-index:12;text-align:center;',
@@ -398,7 +579,9 @@
       '.stage.idle .prompt{opacity:.92;transform:translateY(0);animation:nudge 2.6s ease-in-out .8s infinite;}',
       '@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}',
 
-      '.cta{position:absolute;left:0;right:0;bottom:4.5%;z-index:30;display:flex;justify-content:center;',
+      '.cta{position:absolute;left:0;right:0;bottom:4.5%;z-index:30;display:flex;',
+      '  justify-content:center;align-items:center;flex-wrap:wrap;',
+      '  gap:calc(var(--u) * .020);padding:0 var(--cta-inset);',
       '  opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity var(--t-cta) ease,transform var(--t-cta) ease;}',
       '.stage.done .cta{opacity:1;transform:translateY(0);pointer-events:auto;}',
       /* Dharma Gothic E is a display face — all caps, calls to action only */
@@ -419,6 +602,8 @@
       '.replay:hover{opacity:1;background:rgba(0,0,0,.62);}',
       '.replay:focus-visible{outline:2px solid #fff;outline-offset:2px;}',
       '.replay svg{width:1.05em;height:1.05em;fill:currentColor;}',
+      '.stage.narrow .replay{padding:.6em;}',
+      '.stage.narrow.has-details .replay span{display:none;}',
 
       '.err{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center;',
       '  color:#fff;font-family:system-ui,sans-serif;font-size:14px;text-align:center;padding:24px;z-index:50;}',
@@ -491,6 +676,25 @@
 
   Invite.prototype.build = function () {
     var cfg = this.cfg;
+
+    // The panel copy comes either from a child div on the host or from config.
+    // With a shadow root attached and no <slot>, that child never renders on
+    // its own, so it acts purely as a data holder.
+    var rawDetails = cfg.detailsHtml;
+    if (!rawDetails && cfg.detailsSelector) {
+      var node = this.host.querySelector(cfg.detailsSelector);
+      if (node) {
+        rawDetails = node.innerHTML;
+        // Take the source div out of the page once it has been read. It never
+        // rendered (there is no <slot>), but anything in it is still live
+        // document content until removed — a stray <style> would keep applying
+        // to the host page, and images would keep loading.
+        if (node.parentNode) node.parentNode.removeChild(node);
+      }
+    }
+    this.detailsHtml = sanitizeDetails(rawDetails);
+    this.hasDetails = /\S/.test(this.detailsHtml.replace(/<[^>]*>/g, '')) ||
+                      /<(hr|br)\b/i.test(this.detailsHtml);
     var name = cfg.name || queryParam(cfg.nameParam) || cfg.nameFallback;
     this.recipient = name;
 
@@ -537,7 +741,14 @@
       /* ---- LIVE BACK STAGE (opening happens here) ---- */
       '  <div class="backstage">',
       '    <div class="throat"></div>',
-      '    <div class="card"><img alt="' + escapeHtml(cfg.cardAlt) + '" src="' + escapeHtml(cfg.cardImage) + '"></div>',
+      '    <div class="card"><div class="card-flip">',
+      '      <div class="card-face front">',
+      '        <img alt="' + escapeHtml(cfg.cardAlt) + '" src="' + escapeHtml(cfg.cardImage) + '">',
+      '      </div>',
+      '      <div class="card-face back">' +
+             (this.hasDetails ? '<div class="details-body">' + this.detailsHtml + '</div>' : '') +
+      '</div>',
+      '    </div></div>',
       '    <div class="pocket"></div>',
       '    <div class="flap">',
       '      <div class="side out"><div class="flap-face ' + flapShape + '"></div>',
@@ -551,15 +762,24 @@
 
       '<div class="prompt">' + escapeHtml(cfg.prompt) + '</div>',
 
-      '<div class="cta">' + (safeUrl(cfg.rsvpUrl)
+      (this.hasDetails
+        ? '<div class="details" role="region" aria-label="Event details">' +
+          '<div class="details-body">' + this.detailsHtml + '</div></div>'
+        : ''),
+
+      '<div class="cta">' +
+      (this.hasDetails
+        ? '<button class="details-btn" type="button" aria-expanded="false">' +
+          escapeHtml(cfg.detailsButtonText) + '</button>'
+        : '') + (safeUrl(cfg.rsvpUrl)
         ? '<a href="' + escapeHtml(safeUrl(cfg.rsvpUrl)) + '" target="' + escapeHtml(cfg.rsvpTarget) +
           '" rel="noopener noreferrer">' + escapeHtml(cfg.rsvpText) + '</a>'
         : '') + '</div>',
 
       cfg.replay
-        ? '<button class="replay" type="button">' +
+        ? '<button class="replay" type="button" aria-label="' + escapeHtml(cfg.replayText) + '">' +
           '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg>' +
-          escapeHtml(cfg.replayText) + '</button>'
+          '<span>' + escapeHtml(cfg.replayText) + '</span></button>'
         : ''
     ].join('\n');
 
@@ -567,7 +787,7 @@
     this.root.appendChild(stage);
     this.stage = stage;
     this.card  = stage.querySelector('.card');
-    this.img   = stage.querySelector('.card img');
+    this.img   = stage.querySelector('.card-face img');
 
     /* CSS custom properties that come from config */
     var s = stage.style;
@@ -612,17 +832,28 @@
       ? '0 1px 10px rgba(0,0,0,.55)' : '0 1px 2px rgba(255,255,255,.55)');
     s.setProperty('--replay-bg', darkStage ? 'rgba(0,0,0,.42)' : 'rgba(37,40,42,.72)');
     s.setProperty('--card-r', cfg.cardRadius);
+    s.setProperty('--panel-bg', cfg.detailsBackground);
+    s.setProperty('--panel-fg', resolveInk(cfg.detailsTextColor, cfg.detailsBackground));
     s.setProperty('--t-rise', T.introRise + 'ms');
     s.setProperty('--t-flip', T.flip + 'ms');
     s.setProperty('--t-flap', T.flapOpen + 'ms');
     s.setProperty('--t-cardrise', T.cardRise + 'ms');
     s.setProperty('--t-settle', T.cardSettle + 'ms');
     s.setProperty('--t-cta', T.ctaIn + 'ms');
+    s.setProperty('--t-panel', T.panel + 'ms');
 
     /* interactions */
     stage.querySelector('.env-hit').addEventListener('click', function () { self.open(); });
     var rp = stage.querySelector('.replay');
     if (rp) rp.addEventListener('click', function () { self.reset(); self.start(true); });
+
+    var db = stage.querySelector('.details-btn');
+    if (db) db.addEventListener('click', function () {
+      var open = stage.classList.toggle('card-flipped');
+      db.setAttribute('aria-expanded', open ? 'true' : 'false');
+      db.textContent = open ? self.cfg.detailsCloseText : self.cfg.detailsButtonText;
+    });
+    if (this.hasDetails) stage.classList.add('has-details');
 
     /* a custom stamp image sets the stamp's proportions */
     this.stampAR = 0;
@@ -708,7 +939,34 @@
 
     // Final size: fill most of the frame without crowding the RSVP button.
     var finalH = Math.min(H * 0.78, W * 0.98 / ar);
+
+    // With a details panel alongside, the card and panel share the width, so
+    // the card has to come down to let the pair fit.
+    var narrow = W < (cfg.detailsBreakpoint || 700);
+    var pairGap = Math.max(14, W * 0.028);
+    if (this.hasDetails && !narrow) {
+      finalH = Math.min(finalH, ((W * 0.94 - pairGap) / 2) / ar);
+    }
     var finalS = finalH / cardH;
+    var finalW = cardW * finalS;
+
+    this.stage.classList.toggle('narrow', narrow);
+    if (this.hasDetails && !narrow) {
+      s.setProperty('--card-shift', (-(finalW + pairGap) / 2).toFixed(1) + 'px');
+      s.setProperty('--panel-x', ((finalW + pairGap) / 2).toFixed(1) + 'px');
+    } else {
+      s.setProperty('--card-shift', '0px');
+      s.setProperty('--panel-x', '0px');
+    }
+    s.setProperty('--panel-w', finalW.toFixed(1) + 'px');
+    s.setProperty('--panel-h', finalH.toFixed(1) + 'px');
+    s.setProperty('--panel-y', (H * 0.455).toFixed(1) + 'px');
+    var panelPad = parseFloat(cfg.detailsPadding);
+    if (!(panelPad > 0)) panelPad = Math.max(18, Math.min(40, finalW * 0.085));
+    s.setProperty('--panel-pad', panelPad.toFixed(1) + 'px');
+    // keep the CTA row clear of the replay control on tight layouts
+    s.setProperty('--cta-inset', (narrow && this.hasDetails && cfg.replay)
+      ? Math.round(W * 0.16) + 'px' : '0px');
 
     s.setProperty('--w', W + 'px');
     // Type scales off the smaller dimension so a full-width embed doesn't
@@ -746,6 +1004,28 @@
     // centre the postmark on the stamp's own centre line
     s.setProperty('--pm-top', (envH * 0.09 + (stampH - pmD) / 2).toFixed(1) + 'px');
     s.setProperty('--seal-d', (envH * 0.34 * cfg.sealScale).toFixed(1) + 'px');
+
+    this.syncDetailsMode(narrow);
+  };
+
+  /* Wide layouts slide the panel out; narrow layouts flip the card instead.
+     Called on every resize so crossing the breakpoint switches cleanly. */
+  Invite.prototype.syncDetailsMode = function (narrow) {
+    if (!this.stage || !this.hasDetails || this.state !== 'done') return;
+    var cls = this.stage.classList;
+    if (narrow) {
+      cls.remove('details-out');
+    } else {
+      cls.add('details-out');
+      if (cls.contains('card-flipped')) {
+        cls.remove('card-flipped');
+        var db = this.stage.querySelector('.details-btn');
+        if (db) {
+          db.setAttribute('aria-expanded', 'false');
+          db.textContent = this.cfg.detailsButtonText;
+        }
+      }
+    }
   };
 
   Invite.prototype.observe = function () {
@@ -774,7 +1054,15 @@
   Invite.prototype.reset = function () {
     if (!this.stage) return;
     this.clearTimers();
-    this.stage.className = 'stage' + (this.cfg.vignette ? '' : ' no-vig');
+    // rebuild the class list from scratch, but keep the facts about this
+    // instance that aren't part of the animation state
+    this.stage.className = 'stage' + (this.cfg.vignette ? '' : ' no-vig') +
+      (this.hasDetails ? ' has-details' : '');
+    var db = this.stage.querySelector('.details-btn');
+    if (db) {
+      db.setAttribute('aria-expanded', 'false');
+      db.textContent = this.cfg.detailsButtonText;
+    }
     this.state = 'init';
     // force reflow so the intro transition replays
     void this.stage.offsetWidth;
@@ -788,6 +1076,7 @@
     if (!force && cfg.openOnce && this._sessionOpened()) {
       this.stage.classList.add('intro', 'live', 'flap-open', 'card-out', 'card-final', 'done', 'opened');
       this.state = 'done';
+      this.applyVars();   // re-runs syncDetailsMode now that state is 'done'
       return;
     }
 
@@ -827,6 +1116,17 @@
       self.host.dispatchEvent(new CustomEvent('trplinvite:opened', {
         bubbles: true, detail: { name: self.recipient }
       }));
+
+      // Wide layouts reveal the panel on their own; narrow ones wait for the
+      // button, since there is nowhere for a second column to go.
+      if (self.hasDetails && !self.stage.classList.contains('narrow')) {
+        self.at(self.cfg.detailsDelay, function () {
+          self.stage.classList.add('details-out');
+          self.host.dispatchEvent(new CustomEvent('trplinvite:details', {
+            bubbles: true, detail: { mode: 'panel' }
+          }));
+        });
+      }
     });
   };
 

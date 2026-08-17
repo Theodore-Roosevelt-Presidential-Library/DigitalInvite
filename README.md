@@ -121,6 +121,79 @@ rounded corners; the postmark sits top right, centred on the same line.
 
 ---
 
+## Details panel
+
+Add logistics — schedule, parking, what to wear — as a child of the host element:
+
+```html
+<div data-trpl-invite
+     data-card-image="https://www.trlibrary.com/invite.jpg"
+     data-rsvp-url="https://www.trlibrary.com/rsvp/kennerly">
+  <div data-trpl-details>
+    <h3>Getting Here</h3>
+    <p>The Library sits on the bluff above Medora, North Dakota.</p>
+    <ul><li><strong>5:30 PM</strong> — Reception on the Breezeway</li></ul>
+  </div>
+</div>
+```
+
+On a wide screen the invitation steps left and the panel slides out from behind it, matched to
+the card's height, roughly a second after the card settles. Long copy scrolls inside the panel.
+Below `details-breakpoint` (700px) there is nowhere for a second column, so a **More details**
+button appears and turns the card over to show the panel on its back. RSVP stays where it is in
+both cases. Leave the div out and nothing changes — the card keeps the full frame.
+
+The panel is optional and additive: existing embeds are unaffected.
+
+### Editing
+
+The builder has a small editor for this — bold, italic, underline, bulleted and numbered lists,
+links, and Heading 3 / Heading 4 / Paragraph. Headings render in Dharma Gothic all-caps, body
+copy in ITC Clearface, matching the panel exactly.
+
+Pasting from Word or Google Docs is handled rather than merely tolerated. Both bring a payload
+of `mso-*` classes, inline styles, `<o:p>` tags, stylesheets, and lists that aren't lists — Word
+writes each bullet as a paragraph beginning with a literal `·`. The editor translates what the
+author *meant* into clean markup:
+
+| Pasted | Becomes |
+|---|---|
+| Word's bullet/number paragraphs | real `<ul>` / `<ol>`, markers stripped |
+| `<h1>`, `<h2>`, `<h5>`, `<h6>` | `<h3>` / `<h4>` — the two levels the panel has |
+| Google Docs' `<b style="font-weight:normal">` wrapper | unwrapped, so the text isn't all bold |
+| `<span style="font-weight:700">` | `<strong>` — emphasis kept, not lost with the style |
+| `<li><p>text</p></li>` | `<li>text</li>` |
+| Tables | one paragraph per row |
+| Styles, classes, `<style>`, `<o:p>`, empty paragraphs | removed |
+
+### Allowed markup
+
+Whatever the source, the markup is rebuilt from an allowlist rather than filtered: `h3`, `h4`,
+`p`, `strong`, `b`, `em`, `i`, `u`, `ul`, `ol`, `li`, `a`, `br`, `hr`, `small`. Attributes are
+dropped except `href` on links, which must be `http`, `https`, `mailto`, `tel`, or root-relative
+— `javascript:` is discarded. `target="_blank"` gains `rel="noopener noreferrer"`. Anything else
+is unwrapped so the words survive, or dropped outright for `script`, `style`, `iframe`, and
+friends.
+
+### A caveat on where the markup lives
+
+Because `data-trpl-details` is a div in the page, **its contents are host-page HTML and the
+browser parses them before this script loads.** A `<script>`, `<img onerror>`, or `<iframe
+srcdoc>` placed there executes as part of the page — no embed can prevent that, since the parse
+happens first. The panel itself is always sanitised, and the source div is removed from the
+document once read so a stray `<style>` stops applying.
+
+This is fine for staff-authored markup, which is the documented workflow — anyone who can edit
+that page can already run scripts on it. But if the copy comes from somewhere you don't control,
+pass it as `detailsHtml` instead. That is a JavaScript string, never inserted into the live
+document, and nothing in it executes:
+
+```js
+TRPLInvite.create('#invite', { cardImage: '…', detailsHtml: untrustedCopy });
+```
+
+---
+
 ## Configuration
 
 Every option works as a `data-*` attribute (kebab-case) or a JavaScript property (camelCase).
@@ -195,6 +268,20 @@ Only the values that differ from the defaults need to appear in the snippet.
 | `stamp-accent` | `auto` | Hairline border around the stamp |
 | `stamp-image` | — | Override the wordmark |
 
+### Details panel
+
+| Option | Default | Description |
+|---|---|---|
+| `details-html` | — | Panel markup as a string; safer than the child div for untrusted copy |
+| `details-selector` | `[data-trpl-details]` | Where to find the markup in the host element |
+| `details-delay` | `900` | Milliseconds after the card settles before the panel slides out |
+| `details-breakpoint` | `700` | Below this width the card flips instead of a panel sliding out |
+| `details-background` | `#FFFFFF` | Panel fill |
+| `details-text-color` | `auto` | Panel ink; `auto` reads off the panel fill |
+| `details-padding` | `auto` | Inner margin; `auto` scales with the panel |
+| `details-button-text` | `More details` | Narrow-screen button label |
+| `details-close-text` | `Hide details` | Label once the card is turned over |
+
 ### Buttons & behaviour
 
 | Option | Default | Description |
@@ -244,7 +331,8 @@ Only the values that differ from the defaults need to appear in the snippet.
 | `instance.destroy()` | Tear down and release observers |
 
 The host element fires `trplinvite:opened` (bubbling, `detail.name` carries the recipient) when
-the animation finishes — useful for an analytics event:
+the animation finishes, and `trplinvite:details` when the panel slides out — useful for an
+analytics event:
 
 ```js
 document.querySelector('#invite').addEventListener('trplinvite:opened', function (e) {
