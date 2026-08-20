@@ -187,6 +187,39 @@
     </details>
 
     <details>
+      <summary>Email campaign</summary>
+      <div class="fields">
+        <span class="hint" style="margin:0 0 12px">Fills the Constant Contact template on the
+          <strong>Email</strong> tab. The email shows a sealed envelope addressed to each guest and
+          links through to the animated invitation.</span>
+        <label><span class="lb">Page holding the invitation</span>
+          <input type="text" data-e="inviteUrl" value="https://www.trlibrary.com/rsvp/kennerly">
+          <span class="hint">Where you pasted the embed code. The email appends
+            <code>?name=</code> so the envelope arrives hand-addressed.</span>
+        </label>
+        <label><span class="lb">Event name</span>
+          <input type="text" data-e="eventName" value="In the Room — David Hume Kennerly">
+        </label>
+        <label><span class="lb">Opening line</span>
+          <textarea data-e="intro" rows="2">Sixty years on the front lines of history, and one evening on the bluff above Medora to mark it.</textarea>
+        </label>
+        <label><span class="lb">When</span>
+          <input type="text" data-e="eventDate" value="Thursday, October 1, 2026 · 5:30 PM">
+        </label>
+        <label><span class="lb">Where</span>
+          <input type="text" data-e="eventPlace" value="Theodore Roosevelt Presidential Library, Medora, North Dakota">
+        </label>
+        <label><span class="lb">Button label</span>
+          <input type="text" data-e="buttonLabel" value="Open your invitation">
+        </label>
+        <label><span class="lb">Where the email images are hosted</span>
+          <input type="text" data-e="assetBase" value="https://rsvp.labs.trlibrary.com/assets/email">
+          <span class="hint">Email clients need absolute URLs. Leave this unless the assets move.</span>
+        </label>
+      </div>
+    </details>
+
+    <details>
       <summary>Event details panel</summary>
       <div class="fields">
         <span class="hint" style="margin:0 0 10px">Optional. On a wide screen the invitation steps
@@ -419,6 +452,7 @@
       <div class="tabs">
         <button type="button" id="tabHtml" aria-selected="true">HTML snippet</button>
         <button type="button" id="tabJs" aria-selected="false">JavaScript API</button>
+        <button type="button" id="tabEmail" aria-selected="false">Email &mdash; Constant Contact</button>
       </div>
       <textarea id="out" readonly spellcheck="false"></textarea>
       <div class="pvbar" style="margin-top:10px">
@@ -989,6 +1023,94 @@
     writeCode(cfg);
   }
 
+  /* ------------------------------------------------------------------ *
+   * Constant Contact email
+   *
+   * The template is fetched from email/trpl-invite-email.html rather than
+   * duplicated here, so there is one copy to maintain and the file in the
+   * repo is provably what the builder emits.
+   * ------------------------------------------------------------------ */
+  var emailTemplate = null, emailTemplateError = null;
+
+  function collectEmail(){
+    var e = {};
+    form.querySelectorAll('[data-e]').forEach(function(el){ e[el.dataset.e] = el.value.trim(); });
+    return e;
+  }
+
+  function esc(v){
+    return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  /* Author-entered copy may legitimately want a line break */
+  function escLines(v){ return esc(v).replace(/\r?\n/g,'<br />'); }
+
+  function renderEmail(cfg){
+    if (emailTemplateError) return emailTemplateError;
+    if (!emailTemplate) return 'Loading the email template…';
+    var e = collectEmail();
+    var bg     = cfg.backgroundColor;
+    var env    = cfg.envelopeColor;
+    var onDark = lumOf(bg) < 0.45;
+
+    var map = {
+      BG:            bg,
+      ENVELOPE:      env,
+      ACCENT:        cfg.accentColor,
+      BTN_BG:        cfg.accentColor,
+      BTN_INK:       autoInk(cfg.accentColor),
+      NAME_INK:      autoInk(env),
+      RULE_INK:      onDark || lumOf(env) > 0.45 ? mix(env, autoInk(env), 0.35) : mix(env, autoInk(env), 0.35),
+      HEAD_INK:      autoInk(bg),
+      BODY_INK:      mix(bg, autoInk(bg), 0.78),
+      FINE_INK:      mix(bg, autoInk(bg), 0.55),
+      DIVIDER:       mix(bg, autoInk(bg), 0.22),
+      WORDMARK_IMG:  onDark ? 'wordmark-white.png' : 'wordmark-dark.png',
+      POSTMARK_IMG:  lumOf(env) < 0.45 ? 'postmark-light.png' : 'postmark.png',
+      SEAL_IMG:      'seal-orange.png',
+      ASSET_BASE:    (e.assetBase || '').replace(/\/+$/,''),
+      INVITE_URL:    e.inviteUrl || '',
+      EVENT_NAME:    esc(e.eventName),
+      EVENT_DATE:    escLines(e.eventDate),
+      EVENT_PLACE:   escLines(e.eventPlace),
+      BUTTON_LABEL:  esc(e.buttonLabel),
+      INTRO:         escLines(e.intro)
+    };
+    // The sign-off seal is Sunset Orange unless that reads weakly against the
+    // background, in which case fall back to the neutral that does read.
+    if (colourDistance('#FC924E', bg) < 110){
+      map.SEAL_IMG = onDark ? 'seal-white.png' : 'seal-darkgray.png';
+    }
+    var out = emailTemplate;
+    Object.keys(map).forEach(function(k){
+      out = out.split('{{' + k + '}}').join(map[k]);
+    });
+    return out;
+  }
+
+  /* blend two hex colours; t=0 keeps a, t=1 keeps b */
+  function mix(a, b, t){
+    function rgb(h){ return [1,3,5].map(function(i){ return parseInt(h.substr(i,2),16); }); }
+    if (!/^#[0-9a-f]{6}$/i.test(a) || !/^#[0-9a-f]{6}$/i.test(b)) return b;
+    var x = rgb(a), y = rgb(b);
+    return '#' + [0,1,2].map(function(i){
+      return Math.round(x[i] + (y[i]-x[i])*t).toString(16).padStart(2,'0');
+    }).join('').toUpperCase();
+  }
+
+  function loadEmailTemplate(){
+    if (emailTemplate || emailTemplateError) return Promise.resolve();
+    return fetch('email/trpl-invite-email.html')
+      .then(function(r){ if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function(t){ emailTemplate = t; })
+      .catch(function(){
+        emailTemplateError =
+          'Could not load email/trpl-invite-email.html.\n\n' +
+          'This tab needs the builder to be served over http, not opened as a\n' +
+          'file from disk. Use the hosted builder, or open that file directly\n' +
+          'and fill in the placeholders by hand.';
+      });
+  }
+
   /* ---------- WCAG contrast readout on the button pair ---------- */
   function lum(hex){
     var c = [1,3,5].map(function(i){
@@ -1030,6 +1152,7 @@
   function attrEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
   function writeCode(cfg){
+    if (mode === 'email'){ out.value = renderEmail(cfg); return; }
     var o = diff(cfg);
     var details = o.detailsHtml || '';
     delete o.detailsHtml;   // travels as a child div, not an attribute
@@ -1062,14 +1185,21 @@
     }
   }
 
-  document.getElementById('tabHtml').addEventListener('click', function(){
-    mode='html'; this.setAttribute('aria-selected','true');
-    document.getElementById('tabJs').setAttribute('aria-selected','false'); writeCode(collect());
-  });
-  document.getElementById('tabJs').addEventListener('click', function(){
-    mode='js'; this.setAttribute('aria-selected','true');
-    document.getElementById('tabHtml').setAttribute('aria-selected','false'); writeCode(collect());
-  });
+  function selectTab(which){
+    mode = which;
+    ['html','js','email'].forEach(function(m){
+      var id = m==='html' ? 'tabHtml' : m==='js' ? 'tabJs' : 'tabEmail';
+      document.getElementById(id).setAttribute('aria-selected', m===which ? 'true':'false');
+    });
+    if (which === 'email'){
+      loadEmailTemplate().then(function(){ writeCode(collect()); });
+    } else {
+      writeCode(collect());
+    }
+  }
+  document.getElementById('tabHtml').addEventListener('click', function(){ selectTab('html'); });
+  document.getElementById('tabJs').addEventListener('click', function(){ selectTab('js'); });
+  document.getElementById('tabEmail').addEventListener('click', function(){ selectTab('email'); });
 
   document.getElementById('copyBtn').addEventListener('click', function(){
     var n = document.getElementById('copied');
@@ -1105,6 +1235,7 @@
       name: document.getElementById('projectName').value,
       autoInk: document.getElementById('autoInk').checked,
       cfg: diff(collect()),
+      email: collectEmail(),
       details: edHtml()
     };
     var json = JSON.stringify(payload);
@@ -1136,6 +1267,10 @@
       var t = form.querySelector('input[type=text][data-k="'+pk.dataset.c+'"]');
       if (t && /^#[0-9a-f]{6}$/i.test(t.value)) pk.value = t.value;
     });
+    Object.keys(payload.email || {}).forEach(function(k){
+      var el = form.querySelector('[data-e="'+k+'"]');
+      if (el) el.value = payload.email[k];
+    });
     editor.innerHTML = edSanitize(payload.details || '');
     return true;
   }
@@ -1148,10 +1283,11 @@
   function standalonePage(){
     var cfg = collect();
     var label = document.getElementById('projectName').value || 'TRPL invitation';
-    var snippet = out.value;
-    // the code tab may be showing the JS form; the file always ships the HTML one
+    // whichever tab is showing, the file always ships the HTML snippet
     var wasMode = mode;
-    if (mode !== 'html'){ mode = 'html'; writeCode(cfg); snippet = out.value; mode = wasMode; writeCode(cfg); }
+    mode = 'html'; writeCode(cfg);
+    var snippet = out.value;
+    mode = wasMode; writeCode(cfg);
     return [
       '<!DOCTYPE html>',
       '<html lang="en">',

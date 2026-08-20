@@ -202,6 +202,84 @@ TRPLInvite.create('#invite', { cardImage: '…', detailsHtml: untrustedCopy });
 
 ---
 
+## Constant Contact email
+
+The invitation is a web page, and email clients will not run it. So the email does what Paperless
+Post's own does: it acts as a doorway. It shows a **sealed envelope addressed to the recipient**,
+and the button opens the animated invitation in their browser. The envelope is the teaser; the
+reveal still belongs to the invitation itself.
+
+That envelope is built from table cells rather than an image, so the guest's name is live text.
+That matters twice over: it personalises per recipient without generating an image for each one,
+and it still reads when a client blocks images.
+
+### Using it
+
+The builder's **Email — Constant Contact** tab produces finished HTML: same palette, same envelope
+colour, same button as the embed you just built. In Constant Contact choose
+**Create → Email → Custom Code**, paste, and send yourself a test.
+
+`email/trpl-invite-email.html` is the same template with its placeholders unfilled, kept in the
+repo as the single source the builder fetches and fills. Edit that file and the builder's output
+changes with it.
+
+### Test the personalised link before a live send
+
+The button points at `{invite page}?name=[[FIRSTNAME]]%20[[LASTNAME]]`, which is what makes the
+envelope arrive hand-addressed. Constant Contact rewrites every link for click tracking, and that
+rewrite wraps *around* the personalisation tag. It normally survives, but do not assume it:
+
+1. Send a test to yourself.
+2. Click the button.
+3. Confirm the envelope shows your name — not the literal word FIRSTNAME, and not the fallback.
+
+If it comes through wrong, point the button at the plain invite URL. Everyone then gets the
+fallback greeting; the invitation still works, it simply is not addressed to them.
+
+### What the email cannot do
+
+- **No brand fonts.** Dharma Gothic E and ITC Clearface are Adobe Fonts webfonts and will not load
+  in Outlook, Gmail or Apple Mail. The email uses Georgia and a condensed system sans instead.
+  This is a limitation of email, not something a different template would fix.
+- **No animation.** A static envelope, then a click.
+- **The stamp assumes white stamp paper.** The stamp, postmark and seal are flattened PNGs, so
+  changing `stamp-paper` in the builder does not change the emailed stamp.
+
+### Constraints the template already respects
+
+| Constant Contact rule | Handled |
+|---|---|
+| Custom code under 400 KB | ~14 KB |
+| Must not contain three specific character pairs | none present; the warning comment spells them out rather than showing them |
+| `[[trackingImage]]` required for open tracking | present in the body |
+| Constant Contact appends its own address and unsubscribe footer | the template adds neither, so you get one of each |
+| Styles inlined on send | a single `<style>` block, which Constant Contact inlines |
+
+Verified across all eight brand combinations: each produces a template with no unfilled
+placeholders, a working personalised link, and all four image assets resolving.
+
+---
+
+## Handing a build to the web team
+
+Anyone can build an invitation without touching code. The builder offers two ways to pass the
+result on:
+
+**Download for hand-off** saves a single self-contained HTML file, named after the invitation
+(`kennerly-vip-opening-trpl-invite.html`). Opening it in a browser plays the finished invitation,
+so the person who built it can check their own work before sending it. Inside, the embed snippet
+is fenced between `COPY FROM HERE` / `TO HERE` comments, and a header comment records the
+invitation's name, the date it was built, and a link that reopens it in the builder.
+
+**Copy share link** produces a URL with the entire build encoded into it — every colour, the card
+image, the RSVP link, the details copy and the email fields. Opening it restores the builder
+exactly, so the web team can review or adjust without rebuilding from a description. Typical
+length is under 1 kB, so it survives email and chat intact.
+
+Neither needs an account or a server: the state travels in the file and the link.
+
+---
+
 ## Configuration
 
 Every option works as a `data-*` attribute (kebab-case) or a JavaScript property (camelCase).
@@ -368,11 +446,13 @@ document.querySelector('#invite').addEventListener('trplinvite:opened', function
 ## Repository layout
 
 ```
-dist/trpl-invite.js   the embed — this is the file pages load
-assets/               elkhorn brand seal mask, TRPL wordmark
-index.html            the interactive builder
-demo/                 working example + sample invitation artwork
-CNAME                 rsvp.labs.trlibrary.com
+dist/trpl-invite.js          the embed — this is the file pages load
+assets/                      elkhorn brand seal mask, TRPL wordmark
+assets/email/                flattened PNGs for the email (no masks, no webfonts)
+email/trpl-invite-email.html the Constant Contact template the builder fills
+index.html                   the interactive builder
+demo/                        working example + sample invitation artwork
+CNAME                        rsvp.labs.trlibrary.com
 ```
 
 Assets resolve relative to the script's own URL, so the embed finds its seal and wordmark no

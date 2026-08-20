@@ -1,0 +1,266 @@
+<!--
+  ============================================================================
+  TRPL Digital Invite — Constant Contact custom-code email
+  ============================================================================
+
+  HOW TO USE
+    1. Constant Contact > Create > Email > Custom Code.
+    2. Paste this entire file into the HTML body.
+    3. Replace every double-braced placeholder below. The builder at
+       https://rsvp.labs.trlibrary.com/ fills them in for you and hands back
+       finished code, so hand-editing this file is the fallback, not the norm.
+    4. Send yourself a test before scheduling. See TEST BEFORE YOU SEND.
+
+  PLACEHOLDERS
+    {{EVENT_NAME}}      Exhibition opening, gala, dinner…
+    {{EVENT_DATE}}      "Thursday, October 1, 2026 · 5:30 PM"
+    {{EVENT_PLACE}}     "Theodore Roosevelt Presidential Library, Medora"
+    {{INVITE_URL}}      Page carrying the animated invitation embed
+    {{BUTTON_LABEL}}    "Open your invitation"
+    {{INTRO}}           One or two lines above the envelope
+    {{ASSET_BASE}}      https://rsvp.labs.trlibrary.com/assets/email
+
+  TEST BEFORE YOU SEND
+    The button links to {{INVITE_URL}}?name=[[FIRSTNAME]]%20[[LASTNAME]] so the
+    envelope arrives hand-addressed. Constant Contact rewrites every link for
+    click tracking, and that rewrite happens *around* the personalisation tag.
+    It normally survives, but it is not something to assume: send a test to
+    yourself, click the button, and confirm the envelope shows your name rather
+    than the words FIRSTNAME or the fallback. If it comes through wrong, switch
+    the button href to the plain {{INVITE_URL}} and everyone gets the fallback
+    greeting instead — the invitation still works, it just is not personalised.
+
+  NOTES
+    - Constant Contact adds its own footer with your physical address and the
+      unsubscribe link. Do not add another; you would send two of each.
+    - [[trackingImage]] must stay in the body or open rates go unreported.
+    - No web fonts: Dharma Gothic and ITC Clearface will not load in email, so
+      this uses Georgia and a condensed sans that ship with the OS.
+    - Constant Contact rejects custom code containing three character pairs:
+      an open square bracket followed by a hash, a dollar sign followed by an
+      open brace, and a less-than sign followed by an at sign. They are spelled
+      out here rather than shown, because writing them would trip the same rule
+      and get this template rejected on paste.
+  ============================================================================
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="format-detection" content="telephone=no,address=no,email=no,date=no" />
+<title>{{EVENT_NAME}}</title>
+<style type="text/css">
+  /* Constant Contact inlines these on send. */
+  body { margin:0; padding:0; background-color:{{BG}}; }
+  img { border:0; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; display:block; }
+  table { border-collapse:collapse; }
+  a { color:{{HEAD_INK}}; }
+
+  .wrap      { width:640px; }
+  .env-name  { font-family:Georgia,'Times New Roman',serif; font-size:30px; line-height:1.2;
+               color:{{NAME_INK}}; }
+  .env-to    { font-family:'Arial Narrow',Arial,Helvetica,sans-serif; font-size:11px;
+               letter-spacing:3px; text-transform:uppercase; color:{{NAME_INK}}; }
+  .headline  { font-family:'Arial Narrow',Arial,Helvetica,sans-serif; font-size:26px;
+               letter-spacing:3px; text-transform:uppercase; color:{{HEAD_INK}}; }
+  .intro     { font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:1.6;
+               color:{{BODY_INK}}; }
+  .detail    { font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:1.55;
+               color:{{HEAD_INK}}; }
+  .detail-lb { font-family:'Arial Narrow',Arial,Helvetica,sans-serif; font-size:11px;
+               letter-spacing:2.5px; text-transform:uppercase; color:{{ACCENT}}; }
+  .btn-text  { font-family:'Arial Narrow',Arial,Helvetica,sans-serif; font-size:17px;
+               letter-spacing:2.5px; text-transform:uppercase; }
+  .fine      { font-family:Georgia,'Times New Roman',serif; font-size:12px; line-height:1.6;
+               color:{{FINE_INK}}; }
+
+  /* Phones: shrink the envelope and stack the detail rows. */
+  @media only screen and (max-width:620px) {
+    .wrap        { width:100% !important; }
+    .pad-side    { padding-left:20px !important; padding-right:20px !important; }
+    .env-name    { font-size:23px !important; }
+    .headline    { font-size:21px !important; }
+    .stamp-img   { width:104px !important; }
+    .postmark-img{ width:66px !important; }
+    .env-pad     { padding:22px 18px 30px 18px !important; }
+    .stack       { display:block !important; width:100% !important; }
+    .stack-gap   { height:14px !important; line-height:14px !important; font-size:14px !important; }
+  }
+</style>
+<!--[if mso]>
+<style type="text/css">
+  .env-name  { font-family:Georgia,serif !important; }
+  .headline, .env-to, .detail-lb, .btn-text { font-family:Arial,sans-serif !important; }
+</style>
+<![endif]-->
+</head>
+
+<body style="margin:0; padding:0; background-color:{{BG}};">
+[[trackingImage]]
+
+<!-- Preheader: the grey line beside the subject in the inbox. -->
+<div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:{{BG}};">
+  {{EVENT_DATE}} &nbsp; {{EVENT_PLACE}} &nbsp;&mdash;&nbsp; open your invitation.
+  &nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
+</div>
+
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:{{BG}};">
+<tr><td align="center" style="padding:0;">
+
+  <!--[if mso]><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="640"><tr><td><![endif]-->
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="wrap" width="640" style="width:640px; max-width:640px;">
+
+    <!-- ── wordmark ─────────────────────────────────────────────── -->
+    <tr>
+      <td align="center" class="pad-side" style="padding:34px 40px 26px 40px;">
+        <img src="{{ASSET_BASE}}/{{WORDMARK_IMG}}" width="188" height="128" alt="Theodore Roosevelt Presidential Library"
+             style="width:188px; height:auto; display:block;" />
+      </td>
+    </tr>
+
+    <!-- ── headline + intro ─────────────────────────────────────── -->
+    <tr>
+      <td align="center" class="pad-side headline" style="padding:0 40px 14px 40px;">
+        You&rsquo;re Invited
+      </td>
+    </tr>
+    <tr>
+      <td align="center" class="pad-side intro" style="padding:0 52px 30px 52px;">
+        {{INTRO}}
+      </td>
+    </tr>
+
+    <!-- ── the envelope ─────────────────────────────────────────────
+         Built from table cells rather than an image so the guest's name
+         is live text: it personalises per recipient and stays legible
+         when images are blocked.
+    ────────────────────────────────────────────────────────────── -->
+    <tr>
+      <td align="center" class="pad-side" style="padding:0 40px 8px 40px;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+               style="width:100%; background-color:{{ENVELOPE}};">
+          <tr>
+            <td class="env-pad" style="padding:26px 26px 40px 26px;">
+
+              <!-- stamp left, postmark right -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tr>
+                  <td align="left" valign="top" style="padding:0;">
+                    <img src="{{ASSET_BASE}}/stamp.png" width="132" alt="" class="stamp-img"
+                         style="width:132px; height:auto; display:block;" />
+                  </td>
+                  <td align="right" valign="top" style="padding:0;">
+                    <img src="{{ASSET_BASE}}/{{POSTMARK_IMG}}" width="84" alt="" class="postmark-img"
+                         style="width:84px; height:auto; display:block;" />
+                  </td>
+                </tr>
+              </table>
+
+              <!-- addressed to -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tr><td style="height:34px; line-height:34px; font-size:34px;">&nbsp;</td></tr>
+                <tr>
+                  <td align="center" class="env-to" style="padding:0 0 8px 0;">To</td>
+                </tr>
+                <tr>
+                  <td align="center" class="env-name" style="padding:0 0 14px 0;">
+                    [[FIRSTNAME OR "Friend of the Library"]] [[LASTNAME OR ""]]
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding:0;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="180" style="width:180px;">
+                      <tr><td style="height:1px; line-height:1px; font-size:1px; background-color:{{RULE_INK}};">&nbsp;</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- ── call to action ───────────────────────────────────────── -->
+    <tr>
+      <td align="center" class="pad-side" style="padding:30px 40px 6px 40px;">
+        <!--[if mso]>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word"
+                     href="{{INVITE_URL}}?name=[[FIRSTNAME]]%20[[LASTNAME]]"
+                     style="height:50px; v-text-anchor:middle; width:280px;" arcsize="4%"
+                     stroke="f" fillcolor="{{BTN_BG}}">
+          <w:anchorlock/>
+          <center style="color:{{BTN_INK}}; font-family:Arial,sans-serif; font-size:17px; letter-spacing:2px;">
+            {{BUTTON_LABEL}}
+          </center>
+        </v:roundrect>
+        <![endif]-->
+        <!--[if !mso]><!-- -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+          <tr>
+            <td align="center" bgcolor="{{BTN_BG}}" style="background-color:{{BTN_BG}}; border-radius:2px;">
+              <a href="{{INVITE_URL}}?name=[[FIRSTNAME]]%20[[LASTNAME]]" class="btn-text"
+                 style="display:block; padding:16px 38px 14px 38px; color:{{BTN_INK}}; text-decoration:none;">
+                {{BUTTON_LABEL}}
+              </a>
+            </td>
+          </tr>
+        </table>
+        <!--<![endif]-->
+      </td>
+    </tr>
+    <tr>
+      <td align="center" class="pad-side fine" style="padding:12px 40px 32px 40px;">
+        Opens in your browser &mdash; no app, no account.
+      </td>
+    </tr>
+
+    <!-- ── the essentials, in case they never click ─────────────── -->
+    <tr>
+      <td class="pad-side" style="padding:0 40px 6px 40px;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+          <tr><td style="height:1px; line-height:1px; font-size:1px; background-color:{{DIVIDER}};">&nbsp;</td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="pad-side" style="padding:26px 40px 6px 40px;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+          <tr>
+            <td class="stack" valign="top" width="50%" style="width:50%; padding:0 12px 0 0;">
+              <div class="detail-lb" style="padding-bottom:6px;">When</div>
+              <div class="detail">{{EVENT_DATE}}</div>
+            </td>
+            <td class="stack-gap" style="display:none; height:0; line-height:0; font-size:0;">&nbsp;</td>
+            <td class="stack" valign="top" width="50%" style="width:50%; padding:0 0 0 12px;">
+              <div class="detail-lb" style="padding-bottom:6px;">Where</div>
+              <div class="detail">{{EVENT_PLACE}}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- ── sign-off ─────────────────────────────────────────────── -->
+    <tr>
+      <td align="center" class="pad-side" style="padding:38px 40px 10px 40px;">
+        <img src="{{ASSET_BASE}}/{{SEAL_IMG}}" width="54" height="54" alt=""
+             style="width:54px; height:54px; display:block;" />
+      </td>
+    </tr>
+    <tr>
+      <td align="center" class="pad-side fine" style="padding:0 52px 40px 52px;">
+        {{EVENT_NAME}}<br />
+        Theodore Roosevelt Presidential Library &middot; Medora, North Dakota
+      </td>
+    </tr>
+
+  </table>
+  <!--[if mso]></td></tr></table><![endif]-->
+
+</td></tr>
+</table>
+</body>
+</html>
