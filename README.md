@@ -265,11 +265,23 @@ placeholders, a working personalised link, and all four image assets resolving.
 Anyone can build an invitation without touching code. The builder offers two ways to pass the
 result on:
 
-**Download for hand-off** saves a single self-contained HTML file, named after the invitation
-(`kennerly-vip-opening-trpl-invite.html`). Opening it in a browser plays the finished invitation,
-so the person who built it can check their own work before sending it. Inside, the embed snippet
-is fenced between `COPY FROM HERE` / `TO HERE` comments, and a header comment records the
-invitation's name, the date it was built, and a link that reopens it in the builder.
+**Download everything** saves a zip named after the invitation
+(`kennerly-vip-opening-trpl-invite.zip`, around 400 kB):
+
+```
+README.txt                    what each file is for, the settings used,
+                              and a link that reopens this build
+preview.html                  plays the finished invitation — open this first
+embed-snippet.html            paste into the page hosting the invitation
+email/constant-contact.html   paste into Constant Contact's custom-code editor
+email/assets/*.png            the eight email images, in case the email is
+                              ever hosted somewhere other than this repo
+```
+
+One attachment covers both halves of a campaign: the web team gets the embed, whoever sends the
+email gets the email, and the person who built it can open `preview.html` to check their own work
+before passing it on. The zip is written by a small stored-entry writer in the builder rather than
+a library, so the page still has no JavaScript dependencies.
 
 **Copy share link** produces a URL with the entire build encoded into it — every colour, the card
 image, the RSVP link, the details copy and the email fields. Opening it restores the builder

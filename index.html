@@ -457,7 +457,7 @@
       <textarea id="out" readonly spellcheck="false"></textarea>
       <div class="pvbar" style="margin-top:10px">
         <button type="button" class="btn" id="copyBtn">Copy embed code</button>
-        <button type="button" class="btn ghost" id="downloadBtn">Download for hand-off</button>
+        <button type="button" class="btn ghost" id="downloadBtn">Download everything (.zip)</button>
         <button type="button" class="btn ghost" id="shareBtn">Copy share link</button>
         <span id="copied" style="font-size:12px;color:var(--muted);"></span>
       </div>
@@ -468,10 +468,10 @@
         </label>
       </div>
       <p class="note" style="margin-top:6px">
-        <strong>Download for hand-off</strong> saves a single HTML file: open it in a browser to
-        check the invitation works, and send it on — the embed snippet is marked inside for whoever
-        adds it to the site. <strong>Copy share link</strong> gives a URL that reopens this builder
-        with every setting and the details copy already filled in.
+        <strong>Download everything</strong> saves a zip containing a playable preview, the embed
+        snippet, the Constant Contact email, the email images and a README — everything the web
+        team or your email person needs. <strong>Copy share link</strong> gives a URL that reopens
+        this builder with every setting already filled in.
       </p>
       <p class="note">
         Paste the snippet wherever the invitation should appear. Append
@@ -1322,6 +1322,67 @@
     ].join('\n');
   }
 
+  /* ------------------------------------------------------------------ *
+   * Minimal ZIP writer
+   *
+   * Entries are stored uncompressed — the payload is already-compressed PNGs
+   * plus a few kB of HTML, so deflate would buy nothing and cost a dependency.
+   * ------------------------------------------------------------------ */
+  var CRC_TABLE = (function(){
+    var t = new Uint32Array(256);
+    for (var n=0; n<256; n++){
+      var c = n;
+      for (var k=0; k<8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(bytes){
+    var c = 0xFFFFFFFF;
+    for (var i=0; i<bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function makeZip(files){
+    var enc = new TextEncoder(), parts = [], central = [], offset = 0;
+    files.forEach(function(f){
+      var name = enc.encode(f.name);
+      var data = f.data;
+      var crc = crc32(data), size = data.length;
+      var lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true);
+      lh.setUint16(4, 20, true);
+      lh.setUint16(6, 0x0800, true);              // UTF-8 names
+      lh.setUint16(8, 0, true);                   // stored
+      lh.setUint32(14, crc, true);
+      lh.setUint32(18, size, true);
+      lh.setUint32(22, size, true);
+      lh.setUint16(26, name.length, true);
+      parts.push(new Uint8Array(lh.buffer), name, data);
+      var cd = new DataView(new ArrayBuffer(46));
+      cd.setUint32(0, 0x02014b50, true);
+      cd.setUint16(4, 20, true);
+      cd.setUint16(6, 20, true);
+      cd.setUint16(8, 0x0800, true);
+      cd.setUint16(10, 0, true);
+      cd.setUint32(16, crc, true);
+      cd.setUint32(20, size, true);
+      cd.setUint32(24, size, true);
+      cd.setUint16(28, name.length, true);
+      cd.setUint32(42, offset, true);
+      central.push(new Uint8Array(cd.buffer), name);
+      offset += 30 + name.length + size;
+    });
+    var cdSize = central.reduce(function(n,c){ return n + c.length; }, 0);
+    var end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, files.length, true);
+    end.setUint16(10, files.length, true);
+    end.setUint32(12, cdSize, true);
+    end.setUint32(16, offset, true);
+    return new Blob(parts.concat(central, [new Uint8Array(end.buffer)]),
+                    {type:'application/zip'});
+  }
+
   function saveFile(filename, text, type){
     var blob = new Blob([text], {type: type || 'text/plain;charset=utf-8'});
     var url = URL.createObjectURL(blob);
@@ -1333,12 +1394,101 @@
     setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
   }
 
+  var EMAIL_ASSETS = ['stamp.png','postmark.png','postmark-light.png','seal-orange.png',
+                      'seal-darkgray.png','seal-white.png','wordmark-white.png','wordmark-dark.png'];
+
+  function bundleReadme(label, cfg){
+    var e = collectEmail();
+    return [
+      'TRPL DIGITAL INVITE — ' + label,
+      'Built ' + new Date().toISOString().slice(0,16).replace('T',' ') + ' UTC',
+      '',
+      'WHAT IS IN HERE',
+      '',
+      '  preview.html',
+      '      Open this first. It plays the finished invitation in a browser so',
+      '      you can check it before anyone else sees it.',
+      '',
+      '  embed-snippet.html',
+      '      Paste this into the page that will host the invitation.',
+      '',
+      '  email/constant-contact.html',
+      '      Constant Contact > Create > Email > Custom Code, then paste this.',
+      '      Send yourself a test and click the button before scheduling: the',
+      '      link carries the guest name, and Constant Contact rewrites links',
+      '      for click tracking. Confirm the envelope shows a real name rather',
+      '      than the word FIRSTNAME.',
+      '',
+      '  email/assets/',
+      '      The images the email points at. They are already hosted at',
+      '      ' + (e.assetBase || '(asset base not set)'),
+      '      so you only need these if the email is moved somewhere else.',
+      '',
+      'TO CHANGE ANYTHING',
+      '',
+      '  Reopen this exact build in the builder:',
+      '  ' + shareUrl(),
+      '',
+      'SETTINGS USED',
+      '',
+      '  Invitation page   ' + (e.inviteUrl || '—'),
+      '  Event             ' + (e.eventName || '—'),
+      '  When              ' + (e.eventDate || '—'),
+      '  Where             ' + (e.eventPlace || '—'),
+      '  Background        ' + cfg.backgroundColor,
+      '  Envelope          ' + cfg.envelopeColor,
+      '  Liner             ' + cfg.linerColor,
+      '  Button            ' + cfg.accentColor,
+      ''
+    ].join('\n');
+  }
+
   document.getElementById('downloadBtn').addEventListener('click', function(){
+    var btn = this, n = document.getElementById('copied');
     var name = slug(document.getElementById('projectName').value);
-    saveFile(name + '-trpl-invite.html', standalonePage(), 'text/html;charset=utf-8');
-    var n = document.getElementById('copied');
-    n.textContent = 'Downloaded ' + name + '-trpl-invite.html';
-    setTimeout(function(){ n.textContent = ''; }, 4000);
+    var cfg = collect();
+    btn.disabled = true;
+    n.textContent = 'Building the bundle…';
+
+    var enc = new TextEncoder();
+    var wasMode = mode;
+    mode = 'html'; writeCode(cfg);
+    var snippet = out.value;
+    mode = wasMode; writeCode(cfg);
+
+    loadEmailTemplate().then(function(){
+      var emailHtml = renderEmail(cfg);
+      var files = [
+        { name:'README.txt',  data: enc.encode(bundleReadme(
+              document.getElementById('projectName').value || 'TRPL invitation', cfg)) },
+        { name:'preview.html', data: enc.encode(standalonePage()) },
+        { name:'embed-snippet.html', data: enc.encode(snippet + '\n') },
+        { name:'email/constant-contact.html', data: enc.encode(emailHtml) }
+      ];
+      // the email images, so the bundle stands on its own
+      return Promise.all(EMAIL_ASSETS.map(function(a){
+        return fetch('assets/email/' + a)
+          .then(function(r){ return r.ok ? r.arrayBuffer() : null; })
+          .then(function(buf){
+            if (buf) files.push({ name:'email/assets/' + a, data:new Uint8Array(buf) });
+          })
+          .catch(function(){ /* asset missing is not worth failing the whole bundle */ });
+      })).then(function(){ return files; });
+    }).then(function(files){
+      var blob = makeZip(files);
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = name + '-trpl-invite.zip';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 6000);
+      n.textContent = 'Downloaded ' + name + '-trpl-invite.zip (' +
+                      files.length + ' files, ' + Math.round(blob.size/1024) + ' KB)';
+      btn.disabled = false;
+      setTimeout(function(){ n.textContent = ''; }, 6000);
+    }).catch(function(err){
+      n.textContent = 'Could not build the bundle: ' + err.message;
+      btn.disabled = false;
+    });
   });
 
   document.getElementById('shareBtn').addEventListener('click', function(){

@@ -62,16 +62,18 @@
                color:{{NAME_INK}}; }
   .env-to    { font-family:'Arial Narrow',Arial,Helvetica,sans-serif; font-size:11px;
                letter-spacing:3px; text-transform:uppercase; color:{{NAME_INK}}; }
-  .headline  { font-family:'Arial Narrow',Arial,Helvetica,sans-serif; font-size:26px;
-               letter-spacing:3px; text-transform:uppercase; color:{{HEAD_INK}}; }
+  .headline  { font-family:'Arial Narrow','Helvetica Neue Condensed',Arial,Helvetica,sans-serif;
+               font-size:30px; font-weight:700; letter-spacing:1px; line-height:1.1;
+               text-transform:uppercase; color:{{HEAD_INK}}; }
   .intro     { font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:1.6;
                color:{{BODY_INK}}; }
   .detail    { font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:1.55;
                color:{{HEAD_INK}}; }
-  .detail-lb { font-family:'Arial Narrow',Arial,Helvetica,sans-serif; font-size:11px;
-               letter-spacing:2.5px; text-transform:uppercase; color:{{ACCENT}}; }
-  .btn-text  { font-family:'Arial Narrow',Arial,Helvetica,sans-serif; font-size:17px;
-               letter-spacing:2.5px; text-transform:uppercase; }
+  .detail-lb { font-family:'Arial Narrow','Helvetica Neue Condensed',Arial,Helvetica,sans-serif;
+               font-size:11px; font-weight:700; letter-spacing:2px;
+               text-transform:uppercase; color:{{ACCENT}}; }
+  .btn-text  { font-family:'Arial Narrow','Helvetica Neue Condensed',Arial,Helvetica,sans-serif;
+               font-size:17px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
   .fine      { font-family:Georgia,'Times New Roman',serif; font-size:12px; line-height:1.6;
                color:{{FINE_INK}}; }
 
@@ -80,10 +82,13 @@
     .wrap        { width:100% !important; }
     .pad-side    { padding-left:20px !important; padding-right:20px !important; }
     .env-name    { font-size:23px !important; }
-    .headline    { font-size:21px !important; }
-    .stamp-img   { width:104px !important; }
-    .postmark-img{ width:66px !important; }
-    .env-pad     { padding:22px 18px 30px 18px !important; }
+    .headline    { font-size:24px !important; letter-spacing:0.5px !important; }
+    /* keep the 1.38:1 envelope proportion as the width drops */
+    .env-table   { width:100% !important; }
+    .env-cell    { height:212px !important; padding:21px 22px !important; }
+    .stamp-img   { width:75px !important; }
+    .postmark-img{ width:65px !important; }
+    .env-gap     { height:43px !important; line-height:43px !important; font-size:43px !important; }
     .stack       { display:block !important; width:100% !important; }
     .stack-gap   { height:14px !important; line-height:14px !important; font-size:14px !important; }
   }
@@ -91,7 +96,8 @@
 <!--[if mso]>
 <style type="text/css">
   .env-name  { font-family:Georgia,serif !important; }
-  .headline, .env-to, .detail-lb, .btn-text { font-family:Arial,sans-serif !important; }
+  .env-to { font-family:Arial,sans-serif !important; }
+  .headline, .detail-lb, .btn-text { font-family:Arial,sans-serif !important; font-weight:700 !important; }
 </style>
 <![endif]-->
 </head>
@@ -138,28 +144,32 @@
     ────────────────────────────────────────────────────────────── -->
     <tr>
       <td align="center" class="pad-side" style="padding:0 40px 8px 40px;">
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
-               style="width:100%; background-color:{{ENVELOPE}};">
+        <!-- 460 x 333 is 1.38:1 — a real A7 envelope, and the same proportion
+             the animated invitation uses, so the two read as one object.
+             The height is set on the cell so it holds even when the address
+             block is short; a long name simply grows it. -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="460"
+               class="env-table" style="width:460px; max-width:100%; background-color:{{ENVELOPE}};">
           <tr>
-            <td class="env-pad" style="padding:26px 26px 40px 26px;">
+            <td class="env-cell" height="273" valign="top" style="height:273px; padding:30px 32px 30px 32px;">
 
-              <!-- stamp left, postmark right -->
+              <!-- stamp left, postmark right, sitting on a common line -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
                 <tr>
-                  <td align="left" valign="top" style="padding:0;">
-                    <img src="{{ASSET_BASE}}/stamp.png" width="132" alt="" class="stamp-img"
-                         style="width:132px; height:auto; display:block;" />
+                  <td align="left" valign="middle" style="padding:0;">
+                    <img src="{{ASSET_BASE}}/stamp.png" width="107" alt="" class="stamp-img"
+                         style="width:107px; height:auto; display:block;" />
                   </td>
-                  <td align="right" valign="top" style="padding:0;">
-                    <img src="{{ASSET_BASE}}/{{POSTMARK_IMG}}" width="84" alt="" class="postmark-img"
-                         style="width:84px; height:auto; display:block;" />
+                  <td align="right" valign="middle" style="padding:0;">
+                    <img src="{{ASSET_BASE}}/{{POSTMARK_IMG}}" width="93" alt="" class="postmark-img"
+                         style="width:93px; height:auto; display:block;" />
                   </td>
                 </tr>
               </table>
 
-              <!-- addressed to -->
+              <!-- addressed to, sitting a little below the middle as on real mail -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                <tr><td style="height:34px; line-height:34px; font-size:34px;">&nbsp;</td></tr>
+                <tr><td class="env-gap" style="height:62px; line-height:62px; font-size:62px;">&nbsp;</td></tr>
                 <tr>
                   <td align="center" class="env-to" style="padding:0 0 8px 0;">To</td>
                 </tr>
@@ -192,7 +202,7 @@
                      style="height:50px; v-text-anchor:middle; width:280px;" arcsize="4%"
                      stroke="f" fillcolor="{{BTN_BG}}">
           <w:anchorlock/>
-          <center style="color:{{BTN_INK}}; font-family:Arial,sans-serif; font-size:17px; letter-spacing:2px;">
+          <center style="color:{{BTN_INK}}; font-family:Arial,sans-serif; font-size:17px; font-weight:700; letter-spacing:1px;">
             {{BUTTON_LABEL}}
           </center>
         </v:roundrect>
