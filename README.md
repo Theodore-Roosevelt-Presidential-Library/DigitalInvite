@@ -223,11 +223,43 @@ colour, same button as the embed you just built. In Constant Contact choose
 repo as the single source the builder fetches and fills. Edit that file and the builder's output
 changes with it.
 
+### When people cannot reach the invitation
+
+Constant Contact rewrites every `href` into an `r20` tracking redirect, and there is no supported
+way to opt a single link out. Those redirect domains are what corporate filters most often block,
+which is the usual reason a guest reports that nothing happens when they click.
+
+The template works around it in two ways.
+
+**Nine clickable regions rather than one.** The wordmark, the headline, the stamp, the address
+block, the button, a caption link, the seal and the event name all point at the same destination.
+One blocked or mis-rendered element no longer strands the reader. All nine resolve to a single
+first-party URL, which also reads better to a filter than a scatter of destinations.
+
+**A fallback address that is not a link.** Near the bottom, under *Button not working?*, the plain
+URL appears as text with no anchor around it. With no `href` there is nothing for Constant Contact
+to rewrite and nothing for a filter to strip, so it survives and can be copied by hand. It carries
+no query string, so there is no personalisation to mangle — the guest gets the fallback greeting,
+which is the right trade when the alternative is no access at all.
+
+Verified with images blocked, the state a filter usually leaves behind: the guest's name, the
+button, all nine links and the fallback address all still render.
+
+Two things outside the template that help as much as anything in it:
+
+- Ask recipients' IT to allow-list your sending domain, particularly for corporate guest lists.
+- Keep the invitation on a domain guests already recognise, such as `trlibrary.com`. A shortener
+  or an unfamiliar host raises the score on exactly the filters causing the problem.
+
 ### Test the personalised link before a live send
 
-The button points at `{invite page}?name=[[FIRSTNAME]]%20[[LASTNAME]]`, which is what makes the
-envelope arrive hand-addressed. Constant Contact rewrites every link for click tracking, and that
-rewrite wraps *around* the personalisation tag. It normally survives, but do not assume it:
+The links carry the guest name, which is what makes the envelope arrive hand-addressed. The
+builder offers three forms, and **first name only** is the default for a reason: a full name needs
+a space, which becomes `%20`, and if Constant Contact re-encodes that when wrapping the link for
+tracking the envelope reads `Matt%20Briney` — or the URL fails to parse at all. A first name has
+no space and cannot break that way.
+
+Whichever you choose, do not assume it survives:
 
 1. Send a test to yourself.
 2. Click the button.
@@ -380,6 +412,17 @@ Only the values that differ from the defaults need to appear in the snippet.
 | `details-padding` | `auto` | Inner margin; `auto` scales with the panel |
 | `details-button-text` | `More details` | Narrow-screen button label |
 | `details-close-text` | `Hide details` | Label once the card is turned over |
+
+### Email fields (builder only)
+
+| Field | Default | Description |
+|---|---|---|
+| Page holding the invitation | — | Where the embed lives; the email links here |
+| Name carried in the link | First name only | `first` / `full` / `none`. First name has no space and cannot be broken by re-encoding |
+| Event name, opening line, When, Where | — | Copy for the email |
+| Button label | `Open your invitation` | |
+| Where the email images are hosted | `.../assets/email` | Email needs absolute URLs |
+
 
 ### Buttons & behaviour
 

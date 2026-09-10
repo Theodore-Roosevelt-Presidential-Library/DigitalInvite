@@ -212,6 +212,17 @@
         <label><span class="lb">Button label</span>
           <input type="text" data-e="buttonLabel" value="Open your invitation">
         </label>
+        <label><span class="lb">Name carried in the link</span>
+          <select data-e="nameInLink">
+            <option value="first">First name only (most reliable)</option>
+            <option value="full">First and last name</option>
+            <option value="none">Don't personalise the link</option>
+          </select>
+          <span class="hint">A full name needs a space, which becomes <code>%20</code>. If Constant
+            Contact re-encodes that when it wraps the link for tracking, the envelope can read
+            <code>Matt%20Briney</code> or the link can fail outright. A first name has no space and
+            cannot break that way.</span>
+        </label>
         <label><span class="lb">Where the email images are hosted</span>
           <input type="text" data-e="assetBase" value="https://rsvp.labs.trlibrary.com/assets/email">
           <span class="hint">Email clients need absolute URLs. Leave this unless the assets move.</span>
@@ -1052,7 +1063,11 @@
     var env    = cfg.envelopeColor;
     var onDark = lumOf(bg) < 0.45;
 
+    var nameQuery = e.nameInLink === 'none' ? ''
+                  : e.nameInLink === 'full' ? '?name=[[FIRSTNAME]]%20[[LASTNAME]]'
+                  : '?name=[[FIRSTNAME]]';
     var map = {
+      NAME_QUERY:    nameQuery,
       BG:            bg,
       ENVELOPE:      env,
       ACCENT:        cfg.accentColor,

@@ -20,15 +20,31 @@
     {{INTRO}}           One or two lines above the envelope
     {{ASSET_BASE}}      https://rsvp.labs.trlibrary.com/assets/email
 
+  IF PEOPLE CANNOT REACH THE INVITATION
+    Constant Contact rewrites every href into an r20 tracking redirect, and it
+    is those redirect domains that corporate filters most often block. There is
+    no supported way to opt a single link out of that. This template works
+    around it two ways:
+
+      1. Nine separate clickable regions — the wordmark, the headline, the
+         stamp, the address block, the button, the caption link, the seal and
+         the event name — so one blocked or mis-rendered element does not
+         strand the reader.
+      2. A plain-text address near the bottom that is deliberately NOT a link.
+         With no href there is nothing for Constant Contact to rewrite and
+         nothing for a filter to strip, so it survives and can be copied by
+         hand.
+
+    Also worth doing: ask IT to allow-list the sending domain, and keep the
+    invitation URL on a domain recipients already trust (trlibrary.com) rather
+    than a shortener.
+
   TEST BEFORE YOU SEND
-    The button links to {{INVITE_URL}}?name=[[FIRSTNAME]]%20[[LASTNAME]] so the
-    envelope arrives hand-addressed. Constant Contact rewrites every link for
-    click tracking, and that rewrite happens *around* the personalisation tag.
-    It normally survives, but it is not something to assume: send a test to
-    yourself, click the button, and confirm the envelope shows your name rather
-    than the words FIRSTNAME or the fallback. If it comes through wrong, switch
-    the button href to the plain {{INVITE_URL}} and everyone gets the fallback
-    greeting instead — the invitation still works, it just is not personalised.
+    The links carry the guest name, e.g. {{INVITE_URL}}?name=[[FIRSTNAME]].
+    Send a test to yourself, click through, and confirm the envelope shows a
+    real name rather than the word FIRSTNAME. Prefer the first-name-only form:
+    a full name needs a space, which becomes a percent-escape that can be
+    double-encoded when the link is wrapped for tracking.
 
   NOTES
     - Constant Contact adds its own footer with your physical address and the
@@ -76,6 +92,13 @@
                font-size:17px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
   .fine      { font-family:Georgia,'Times New Roman',serif; font-size:12px; line-height:1.6;
                color:{{FINE_INK}}; }
+  /* Design elements that are also links: no blue, no underline. */
+  .plainlink { text-decoration:none; }
+  .fallback  { font-family:Georgia,'Times New Roman',serif; font-size:13px; line-height:1.7;
+               color:{{HEAD_INK}}; word-break:break-all; }
+  .fallback-lb { font-family:'Arial Narrow','Helvetica Neue Condensed',Arial,Helvetica,sans-serif;
+               font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+               color:{{ACCENT}}; }
 
   /* Phones: shrink the envelope and stack the detail rows. */
   @media only screen and (max-width:620px) {
@@ -120,15 +143,18 @@
     <!-- ── wordmark ─────────────────────────────────────────────── -->
     <tr>
       <td align="center" class="pad-side" style="padding:34px 40px 26px 40px;">
-        <img src="{{ASSET_BASE}}/{{WORDMARK_IMG}}" width="188" height="128" alt="Theodore Roosevelt Presidential Library"
-             style="width:188px; height:auto; display:block;" />
+        <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink" style="text-decoration:none;">
+          <img src="{{ASSET_BASE}}/{{WORDMARK_IMG}}" width="188" height="128" alt="Theodore Roosevelt Presidential Library"
+               style="width:188px; height:auto; display:block; border:0;" />
+        </a>
       </td>
     </tr>
 
     <!-- ── headline + intro ─────────────────────────────────────── -->
     <tr>
       <td align="center" class="pad-side headline" style="padding:0 40px 14px 40px;">
-        You&rsquo;re Invited
+        <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink"
+           style="color:{{HEAD_INK}}; text-decoration:none;">You&rsquo;re Invited</a>
       </td>
     </tr>
     <tr>
@@ -157,8 +183,11 @@
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
                 <tr>
                   <td align="left" valign="middle" style="padding:0;">
-                    <img src="{{ASSET_BASE}}/stamp.png" width="107" alt="" class="stamp-img"
-                         style="width:107px; height:auto; display:block;" />
+                    <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink" style="text-decoration:none;">
+                      <img src="{{ASSET_BASE}}/stamp.png" width="107" class="stamp-img"
+                           alt="Theodore Roosevelt Presidential Library"
+                           style="width:107px; height:auto; display:block; border:0;" />
+                    </a>
                   </td>
                   <td align="right" valign="middle" style="padding:0;">
                     <img src="{{ASSET_BASE}}/{{POSTMARK_IMG}}" width="93" alt="" class="postmark-img"
@@ -171,11 +200,15 @@
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
                 <tr><td class="env-gap" style="height:62px; line-height:62px; font-size:62px;">&nbsp;</td></tr>
                 <tr>
-                  <td align="center" class="env-to" style="padding:0 0 8px 0;">To</td>
+                  <td align="center" class="env-to" style="padding:0 0 8px 0;">
+                    <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink"
+                       style="color:{{NAME_INK}}; text-decoration:none;">To</a>
+                  </td>
                 </tr>
                 <tr>
                   <td align="center" class="env-name" style="padding:0 0 14px 0;">
-                    [[FIRSTNAME OR "Friend of the Library"]] [[LASTNAME OR ""]]
+                    <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink"
+                       style="color:{{NAME_INK}}; text-decoration:none;">[[FIRSTNAME OR "Friend of the Library"]] [[LASTNAME OR ""]]</a>
                   </td>
                 </tr>
                 <tr>
@@ -198,7 +231,7 @@
       <td align="center" class="pad-side" style="padding:30px 40px 6px 40px;">
         <!--[if mso]>
         <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word"
-                     href="{{INVITE_URL}}?name=[[FIRSTNAME]]%20[[LASTNAME]]"
+                     href="{{INVITE_URL}}{{NAME_QUERY}}"
                      style="height:50px; v-text-anchor:middle; width:280px;" arcsize="4%"
                      stroke="f" fillcolor="{{BTN_BG}}">
           <w:anchorlock/>
@@ -211,7 +244,7 @@
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
           <tr>
             <td align="center" bgcolor="{{BTN_BG}}" style="background-color:{{BTN_BG}}; border-radius:2px;">
-              <a href="{{INVITE_URL}}?name=[[FIRSTNAME]]%20[[LASTNAME]]" class="btn-text"
+              <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="btn-text"
                  style="display:block; padding:16px 38px 14px 38px; color:{{BTN_INK}}; text-decoration:none;">
                 {{BUTTON_LABEL}}
               </a>
@@ -223,7 +256,8 @@
     </tr>
     <tr>
       <td align="center" class="pad-side fine" style="padding:12px 40px 32px 40px;">
-        Opens in your browser &mdash; no app, no account.
+        Opens in your browser &mdash; no app, no account.<br />
+        <a href="{{INVITE_URL}}{{NAME_QUERY}}" style="color:{{ACCENT}}; text-decoration:underline;">Open the invitation</a>
       </td>
     </tr>
 
@@ -253,16 +287,43 @@
       </td>
     </tr>
 
+    <!-- ── fallback address ─────────────────────────────────────────
+         Deliberately NOT wrapped in an anchor. Constant Contact rewrites
+         every href into a tracking redirect, and it is those redirect
+         domains that content filters tend to block or strip. With no href
+         there is nothing to rewrite, so this address survives intact and
+         can be read, typed or copied even when every link above is gone.
+    ────────────────────────────────────────────────────────────── -->
+    <tr>
+      <td class="pad-side" style="padding:26px 40px 0 40px;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+               style="width:100%; border:1px solid {{DIVIDER}};">
+          <tr>
+            <td align="center" style="padding:18px 22px 20px 22px;">
+              <div class="fallback-lb" style="padding-bottom:8px;">Button not working?</div>
+              <div class="fine" style="padding-bottom:10px;">
+                Some workplace mail systems block buttons and links. Copy this
+                address into your browser instead:
+              </div>
+              <div class="fallback">{{INVITE_URL}}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
     <!-- ── sign-off ─────────────────────────────────────────────── -->
     <tr>
       <td align="center" class="pad-side" style="padding:38px 40px 10px 40px;">
-        <img src="{{ASSET_BASE}}/{{SEAL_IMG}}" width="54" height="54" alt=""
-             style="width:54px; height:54px; display:block;" />
+        <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink" style="text-decoration:none;">
+          <img src="{{ASSET_BASE}}/{{SEAL_IMG}}" width="54" height="54" alt="Theodore Roosevelt Presidential Library"
+               style="width:54px; height:54px; display:block; border:0;" />
+        </a>
       </td>
     </tr>
     <tr>
       <td align="center" class="pad-side fine" style="padding:0 52px 40px 52px;">
-        {{EVENT_NAME}}<br />
+        <a href="{{INVITE_URL}}{{NAME_QUERY}}" style="color:{{FINE_INK}}; text-decoration:none;">{{EVENT_NAME}}</a><br />
         Theodore Roosevelt Presidential Library &middot; Medora, North Dakota
       </td>
     </tr>
