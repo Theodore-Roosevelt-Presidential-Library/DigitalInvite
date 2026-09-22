@@ -254,10 +254,14 @@ Two things outside the template that help as much as anything in it:
 ### Test the personalised link before a live send
 
 The links carry the guest name, which is what makes the envelope arrive hand-addressed. The
-builder offers three forms, and **first name only** is the default for a reason: a full name needs
-a space, which becomes `%20`, and if Constant Contact re-encodes that when wrapping the link for
-tracking the envelope reads `Matt%20Briney` — or the URL fails to parse at all. A first name has
-no space and cannot break that way.
+builder offers three forms, and **first name only** is the default because it has no space to
+escape and so cannot break.
+
+The worry about the full-name form was that `%20` might be re-encoded when Constant Contact wraps
+the link for tracking, leaving the envelope reading `Matt%20Briney` or failing to parse. On
+**2026-09-22** the full form was sent live and clicked through in **Outlook web** and **Apple
+Mail**: the escape survived the rewrite and the invitation arrived correctly hand-addressed. Treat
+the full form as usable and first-name-only as merely the more defensive default.
 
 Whichever you choose, do not assume it survives:
 
@@ -267,6 +271,42 @@ Whichever you choose, do not assume it survives:
 
 If it comes through wrong, point the button at the plain invite URL. Everyone then gets the
 fallback greeting; the invitation still works, it simply is not addressed to them.
+
+### Why there is no Outlook-only button
+
+Most email templates draw the call-to-action twice: a VML `roundrect` inside `<!--[if mso]>` so
+Outlook gets rounded corners, and a normal table-and-anchor button for everyone else, fenced off
+behind `<!--[if !mso]>`. This template used to do that. It no longer does, and the reason is worth
+keeping.
+
+**Constant Contact strips attributes off VML when the campaign is saved.** `href`, `xmlns:w` and
+`anchorlock` are all removed. Observed 2026-09-22: adding them to a live campaign's `roundrect`,
+saving, and reloading returned the attribute list as `xmlns:v, style, arcsize, stroke, fillcolor`.
+
+On its own that is survivable. Combined with the `[if !mso]` fence it is not — Outlook desktop got
+a button with no link *and* was excluded from the anchor that would have rescued it. The result is
+a button that does nothing, for the one client most likely to be reading.
+
+That is not theoretical. The 2026-08-28 *Kennerly Invite* send recorded **705 sends, 417 opens
+(68.6%) and 0 clicks**, to a list of state legislators on `@ndlegis.gov` and `@nd.gov`, corporate
+donors and foundation staff — an Outlook-heavy audience. An open rate that good with no clicks at
+all is not a soft response.
+
+Both branches are gone. Every client renders the same table-and-anchor button. The only cost is
+`border-radius:2px` in Outlook, which is imperceptible at `arcsize="4%"`.
+
+**If you add anything Outlook-specific in future, verify it survives a save before trusting it.**
+
+### After you paste into Constant Contact
+
+What ships is not what you pasted. Three checks, in order:
+
+1. **Read the saved HTML back.** Reopen the campaign and confirm nothing you depend on was
+   sanitised away.
+2. **Send a test and click every region** — the envelope, the wordmark, the seal, the caption
+   link, not just the button. Ten redundant click targets only help if they all work.
+3. **Check the click rate within 24 hours of the live send.** A normal open rate beside a zero
+   click rate means a broken link. In 2026 that pattern sat unnoticed for three weeks.
 
 ### What the email cannot do
 
@@ -286,6 +326,7 @@ fallback greeting; the invitation still works, it simply is not addressed to the
 | `[[trackingImage]]` required for open tracking | present in the body |
 | Constant Contact appends its own address and unsubscribe footer | the template adds neither, so you get one of each |
 | Styles inlined on send | a single `<style>` block, which Constant Contact inlines |
+| Attributes on VML elements are stripped on save | no VML used; the button is a table and anchor for every client |
 
 Verified across all eight brand combinations: each produces a template with no unfilled
 placeholders, a working personalised link, and all four image assets resolving.

@@ -26,10 +26,10 @@
     no supported way to opt a single link out of that. This template works
     around it two ways:
 
-      1. Nine separate clickable regions — the wordmark, the headline, the
-         stamp, the address block, the button, the caption link, the seal and
-         the event name — so one blocked or mis-rendered element does not
-         strand the reader.
+      1. Ten separate clickable regions — the wordmark, the headline, the
+         stamp, the postmark, the "To" label, the guest's name, the button,
+         the caption link, the seal and the event name — so one blocked or
+         mis-rendered element does not strand the reader.
       2. A plain-text address near the bottom that is deliberately NOT a link.
          With no href there is nothing for Constant Contact to rewrite and
          nothing for a filter to strip, so it survives and can be copied by
@@ -42,9 +42,27 @@
   TEST BEFORE YOU SEND
     The links carry the guest name, e.g. {{INVITE_URL}}?name=[[FIRSTNAME]].
     Send a test to yourself, click through, and confirm the envelope shows a
-    real name rather than the word FIRSTNAME. Prefer the first-name-only form:
-    a full name needs a space, which becomes a percent-escape that can be
-    double-encoded when the link is wrapped for tracking.
+    real name rather than the word FIRSTNAME.
+
+    First-name-only remains the default because it has no space to escape.
+    The full-name form was verified working on 2026-09-22 in Outlook web and
+    Apple Mail — the percent-escape survived the tracking rewrite and the
+    invitation arrived hand-addressed — so it is no longer suspect, just less
+    defensive.
+
+  AFTER YOU PASTE INTO CONSTANT CONTACT
+    What ships is not what you pasted. Constant Contact rewrites every href
+    into a tracking redirect and silently sanitises markup it does not like.
+    Before scheduling:
+
+      1. Reopen the saved campaign and read the HTML back. Confirm nothing you
+         depend on was dropped. Attributes on VML elements do not survive,
+         which is why this template no longer contains any.
+      2. Send a test and click every region, the envelope included, not only
+         the button.
+      3. Check the click rate within 24 hours of the live send. A normal open
+         rate next to a zero click rate is a broken link, not a soft audience.
+         That exact pattern went unnoticed for three weeks in 2026.
 
   NOTES
     - Constant Contact adds its own footer with your physical address and the
@@ -190,8 +208,10 @@
                     </a>
                   </td>
                   <td align="right" valign="middle" style="padding:0;">
-                    <img src="{{ASSET_BASE}}/{{POSTMARK_IMG}}" width="93" alt="" class="postmark-img"
-                         style="width:93px; height:auto; display:block;" />
+                    <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink" style="text-decoration:none;">
+                      <img src="{{ASSET_BASE}}/{{POSTMARK_IMG}}" width="93" alt="" class="postmark-img"
+                           style="width:93px; height:auto; display:block; border:0;" />
+                    </a>
                   </td>
                 </tr>
               </table>
@@ -229,18 +249,13 @@
     <!-- ── call to action ───────────────────────────────────────── -->
     <tr>
       <td align="center" class="pad-side" style="padding:30px 40px 6px 40px;">
-        <!--[if mso]>
-        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word"
-                     href="{{INVITE_URL}}{{NAME_QUERY}}"
-                     style="height:50px; v-text-anchor:middle; width:280px;" arcsize="4%"
-                     stroke="f" fillcolor="{{BTN_BG}}">
-          <w:anchorlock/>
-          <center style="color:{{BTN_INK}}; font-family:Arial,sans-serif; font-size:17px; font-weight:700; letter-spacing:1px;">
-            {{BUTTON_LABEL}}
-          </center>
-        </v:roundrect>
-        <![endif]-->
-        <!--[if !mso]><!-- -->
+        <!-- Outlook gets this same anchor button. A VML roundrect used to sit here
+             so Outlook would render rounded corners, but Constant Contact strips
+             href, xmlns:w and anchorlock off VML when the campaign is saved. That
+             left Outlook desktop showing a button that did nothing, with no second
+             path, because the anchor below was fenced off in a non-Outlook branch.
+             Two pixels of border-radius is a cheap price for a link that works.
+             See "Why there is no Outlook-only button" in the README. -->
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
           <tr>
             <td align="center" bgcolor="{{BTN_BG}}" style="background-color:{{BTN_BG}}; border-radius:2px;">
@@ -251,7 +266,6 @@
             </td>
           </tr>
         </table>
-        <!--<![endif]-->
       </td>
     </tr>
     <tr>
