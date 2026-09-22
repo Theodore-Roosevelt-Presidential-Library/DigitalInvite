@@ -42,9 +42,27 @@
   TEST BEFORE YOU SEND
     The links carry the guest name, e.g. {{INVITE_URL}}?name=[[FIRSTNAME]].
     Send a test to yourself, click through, and confirm the envelope shows a
-    real name rather than the word FIRSTNAME. Prefer the first-name-only form:
-    a full name needs a space, which becomes a percent-escape that can be
-    double-encoded when the link is wrapped for tracking.
+    real name rather than the word FIRSTNAME.
+
+    First-name-only remains the default because it has no space to escape.
+    The full-name form was verified working on 2026-09-22 in Outlook web and
+    Apple Mail — the percent-escape survived the tracking rewrite and the
+    invitation arrived hand-addressed — so it is no longer suspect, just less
+    defensive.
+
+  AFTER YOU PASTE INTO CONSTANT CONTACT
+    What ships is not what you pasted. Constant Contact rewrites every href
+    into a tracking redirect and silently sanitises markup it does not like.
+    Before scheduling:
+
+      1. Reopen the saved campaign and read the HTML back. Confirm nothing you
+         depend on was dropped. Attributes on VML elements do not survive,
+         which is why this template no longer contains any.
+      2. Send a test and click every region, the envelope included, not only
+         the button.
+      3. Check the click rate within 24 hours of the live send. A normal open
+         rate next to a zero click rate is a broken link, not a soft audience.
+         That exact pattern went unnoticed for three weeks in 2026.
 
   NOTES
     - Constant Contact adds its own footer with your physical address and the
