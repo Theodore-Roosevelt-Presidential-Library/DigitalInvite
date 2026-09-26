@@ -148,7 +148,8 @@
     flapOpen:    900,
     cardDelay:   260,
     cardRise:    850,
-    cardSettle:  900,
+    cardClear:   700,
+    cardSettle:  800,
     ctaIn:       450,
     panel:       700
   };
@@ -518,18 +519,28 @@
       '.stage.card-out .card-face{-webkit-clip-path:inset(0 0 var(--card-clip-out) 0);',
       '  clip-path:inset(0 0 var(--card-clip-out) 0);}',
       /* the envelope withdraws; the card is left holding the frame */
-      '.stage.card-final .throat,.stage.card-final .pocket{transform:translateY(30%);opacity:0;',
-      '  transition:transform var(--t-settle) cubic-bezier(.4,0,.2,1),opacity calc(var(--t-settle) * .75) ease;}',
-      '.stage.card-final .flap{opacity:0;transition:opacity calc(var(--t-settle) * .55) ease;}',
-      '.stage.card-final .card{z-index:20;',
+      /* Step one (card-final): the envelope drops away by exactly the amount the
+         card is clipped, on the same curve the clip releases, so the clip edge
+         and the pocket's top edge stay locked together throughout. The envelope
+         only fades once it is nearly gone; fading it earlier left a hard-cut
+         card floating over a half-transparent envelope, which read as the card
+         breaking apart. The card itself does not move yet. */
+      '.stage.card-final .throat,.stage.card-final .pocket{transform:translateY(var(--card-clip-out));opacity:0;',
+      '  transition:transform var(--t-clear) cubic-bezier(.4,0,.2,1),',
+      '             opacity calc(var(--t-clear) * .3) ease calc(var(--t-clear) * .7);}',
+      '.stage.card-final .flap{opacity:0;transition:opacity calc(var(--t-clear) * .55) ease;}',
+      '.stage.card-final .card{z-index:20;}',
+      '.stage.card-final .card-face{-webkit-clip-path:inset(0 0 0 0);clip-path:inset(0 0 0 0);',
+      '  transition:clip-path var(--t-clear) cubic-bezier(.4,0,.2,1),-webkit-clip-path var(--t-clear) cubic-bezier(.4,0,.2,1),',
+      '             box-shadow var(--t-settle) ease;}',
+      /* Step two (card-settle): the card, now clear of the envelope, scales up and
+         centres in the frame. */
+      '.stage.card-settle .card{',
       '  transition:transform var(--t-settle) cubic-bezier(.22,.8,.26,1);',
       '  transform:translate(-50%,-50%) translateY(var(--card-final-y)) scale(var(--card-final-s));}',
-      '.stage.card-final .card-face{-webkit-clip-path:inset(0 0 0 0);clip-path:inset(0 0 0 0);',
-      '  transition:clip-path var(--t-settle) ease,-webkit-clip-path var(--t-settle) ease,',
-      '             box-shadow var(--t-settle) ease;',
-      '  box-shadow:0 20px 46px rgba(0,0,0,.42);}',
+      '.stage.card-settle .card-face{box-shadow:0 20px 46px rgba(0,0,0,.42);}',
       /* wide layout: the card steps left to make room for the panel */
-      '.stage.card-final.details-out .card{',
+      '.stage.card-settle.details-out .card{',
       '  transform:translate(-50%,-50%) translateY(var(--card-final-y))',
       '            translateX(var(--card-shift)) scale(var(--card-final-s));',
       '  transition:transform var(--t-panel) cubic-bezier(.22,.8,.26,1);}',
@@ -911,6 +922,7 @@
     s.setProperty('--t-flip', T.flip + 'ms');
     s.setProperty('--t-flap', T.flapOpen + 'ms');
     s.setProperty('--t-cardrise', T.cardRise + 'ms');
+    s.setProperty('--t-clear', T.cardClear + 'ms');
     s.setProperty('--t-settle', T.cardSettle + 'ms');
     s.setProperty('--t-cta', T.ctaIn + 'ms');
     s.setProperty('--t-panel', T.panel + 'ms');
@@ -1160,7 +1172,7 @@
     this.applyVars();
 
     if (!force && cfg.openOnce && this._sessionOpened()) {
-      this.stage.classList.add('intro', 'live', 'flap-open', 'card-out', 'card-final', 'done', 'opened');
+      this.stage.classList.add('intro', 'live', 'flap-open', 'card-out', 'card-final', 'card-settle', 'done', 'opened');
       this.state = 'done';
       this.applyVars();   // re-runs syncDetailsMode now that state is 'done'
       return;
@@ -1195,7 +1207,11 @@
     this.at(settleAt, function () {
       self.stage.classList.add('card-final');
     });
-    this.at(settleAt + T.cardSettle * 0.7, function () {
+    // the card settles once it is fully clear of the envelope
+    this.at(settleAt + T.cardClear, function () {
+      self.stage.classList.add('card-settle');
+    });
+    this.at(settleAt + T.cardClear + T.cardSettle * 0.7, function () {
       self.stage.classList.add('done', 'opened');
       self.state = 'done';
       if (self.cfg.openOnce) self._markOpened();
