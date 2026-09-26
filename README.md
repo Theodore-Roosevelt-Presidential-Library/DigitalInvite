@@ -466,7 +466,9 @@ Only the values that differ from the defaults need to appear in the snippet.
 | Page holding the invitation | — | Where the embed lives; the email links here |
 | Name carried in the link | First name only | `first` / `full` / `none`. First name has no space and cannot be broken by re-encoding |
 | Event name, opening line, When, Where | — | Copy for the email |
+| (Fallback name, from Recipient name) | `Friend of the Library` | Also the email's greeting when the contact has no first name |
 | Button label | `Open your invitation` | |
+| Organization line | `Theodore Roosevelt Presidential Library` | Sign-off under the seal and alt text on the images; name both organizations for a co-hosted event |
 | Where the email images are hosted | `.../assets/email` | Email needs absolute URLs |
 
 A co-branded set for events hosted with the Theodore Roosevelt Medora Foundation lives at

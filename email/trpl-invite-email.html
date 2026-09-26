@@ -19,6 +19,9 @@
     {{BUTTON_LABEL}}    "Open your invitation"
     {{INTRO}}           One or two lines above the envelope
     {{ASSET_BASE}}      https://rsvp.labs.trlibrary.com/assets/email
+    {{ORG_NAME}}        Sign-off line and image alt text — "Theodore Roosevelt Presidential Library",
+                        or both organizations for a co-hosted event
+    {{NAME_FALLBACK}}   Greeting when the contact has no first name — "Friend of the Library"
 
   IF PEOPLE CANNOT REACH THE INVITATION
     Constant Contact rewrites every href into an r20 tracking redirect, and it
@@ -162,7 +165,7 @@
     <tr>
       <td align="center" class="pad-side" style="padding:34px 40px 26px 40px;">
         <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink" style="text-decoration:none;">
-          <img src="{{ASSET_BASE}}/{{WORDMARK_IMG}}" width="188" height="128" alt="Theodore Roosevelt Presidential Library"
+          <img src="{{ASSET_BASE}}/{{WORDMARK_IMG}}" width="188" height="128" alt="{{ORG_NAME}}"
                style="width:188px; height:auto; display:block; border:0;" />
         </a>
       </td>
@@ -203,7 +206,7 @@
                   <td align="left" valign="middle" style="padding:0;">
                     <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink" style="text-decoration:none;">
                       <img src="{{ASSET_BASE}}/stamp.png" width="107" class="stamp-img"
-                           alt="Theodore Roosevelt Presidential Library"
+                           alt="{{ORG_NAME}}"
                            style="width:107px; height:auto; display:block; border:0;" />
                     </a>
                   </td>
@@ -228,7 +231,7 @@
                 <tr>
                   <td align="center" class="env-name" style="padding:0 0 14px 0;">
                     <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink"
-                       style="color:{{NAME_INK}}; text-decoration:none;">[[FIRSTNAME OR "Friend of the Library"]] [[LASTNAME OR ""]]</a>
+                       style="color:{{NAME_INK}}; text-decoration:none;">[[FIRSTNAME OR "{{NAME_FALLBACK}}"]] [[LASTNAME OR ""]]</a>
                   </td>
                 </tr>
                 <tr>
@@ -330,7 +333,7 @@
     <tr>
       <td align="center" class="pad-side" style="padding:38px 40px 10px 40px;">
         <a href="{{INVITE_URL}}{{NAME_QUERY}}" class="plainlink" style="text-decoration:none;">
-          <img src="{{ASSET_BASE}}/{{SEAL_IMG}}" width="54" height="54" alt="Theodore Roosevelt Presidential Library"
+          <img src="{{ASSET_BASE}}/{{SEAL_IMG}}" width="54" height="54" alt="{{ORG_NAME}}"
                style="width:54px; height:54px; display:block; border:0;" />
         </a>
       </td>
@@ -338,7 +341,7 @@
     <tr>
       <td align="center" class="pad-side fine" style="padding:0 52px 40px 52px;">
         <a href="{{INVITE_URL}}{{NAME_QUERY}}" style="color:{{FINE_INK}}; text-decoration:none;">{{EVENT_NAME}}</a><br />
-        Theodore Roosevelt Presidential Library &middot; Medora, North Dakota
+        {{ORG_NAME}} &middot; Medora, North Dakota
       </td>
     </tr>
 

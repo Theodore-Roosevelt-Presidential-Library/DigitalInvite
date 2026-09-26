@@ -213,6 +213,11 @@
         <label><span class="lb">Where</span>
           <input type="text" data-e="eventPlace" value="Theodore Roosevelt Presidential Library, Medora, North Dakota">
         </label>
+        <label><span class="lb">Organization line</span>
+          <input type="text" data-e="orgName" value="Theodore Roosevelt Presidential Library">
+          <span class="hint">The sign-off under the seal and the alt text on the wordmark, stamp and seal. For a
+            co-hosted event name both organizations.</span>
+        </label>
         <label><span class="lb">Button label</span>
           <input type="text" data-e="buttonLabel" value="Open your invitation">
         </label>
@@ -1140,7 +1145,9 @@
       EVENT_DATE:    escLines(e.eventDate),
       EVENT_PLACE:   escLines(e.eventPlace),
       BUTTON_LABEL:  esc(e.buttonLabel),
-      INTRO:         escLines(e.intro)
+      INTRO:         escLines(e.intro),
+      ORG_NAME:      esc(e.orgName || 'Theodore Roosevelt Presidential Library'),
+      NAME_FALLBACK: esc(cfg.nameFallback || 'Friend of the Library').replace(/"/g,'')
     };
     // The sign-off seal is Sunset Orange unless that reads weakly against the
     // background, in which case fall back to the neutral that does read.
