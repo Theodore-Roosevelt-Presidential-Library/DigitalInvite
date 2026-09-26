@@ -53,9 +53,13 @@
 
     // --- Envelope ----------------------------------------------------
     envelopeColor:    '#D1CCBD',     // TRPL Sand, Pantone 7534C
+    envelopeImage:    '',            // optional paper texture/graphic over the envelope colour (front, back, flap)
+    envelopeImageSize:'cover',       // cover | contain | tile
     envelopeAspect:   1.38,          // width / height — A7, the standard 7.25 x 5.25 envelope
     envelopeScale:    1,             // multiplier on default size
     linerColor:       '#E7805D',     // TRPL Deep Orange, Pantone 2022C
+    linerImage:       '',            // optional liner pattern/graphic revealed by the open flap
+    linerImageSize:   'tile',        // tile | cover | contain
     flapDepth:        0.42,          // flap height as a share of envelope height
     flapShape:        'point',       // point | straight
 
@@ -68,6 +72,7 @@
     stampPaper:       '#ffffff',
     stampInk:         'auto',        // TRPL wordmark colour; 'auto' follows the stamp paper
     stampImage:       '',            // optional override for the wordmark
+    stampScale:       1,             // size multiplier for the stamp (a wide co-branded lockup may want 1.4-1.6)
     stampAspect:      1.708,         // width / height of the stamp artwork (TRPL wordmark)
     stampPadding:     'auto',        // margin around the artwork; 'auto' ~ 12px, or set e.g. '14px'
     stampPerf:        'auto',        // perforation tooth depth; 'auto' scales with the stamp
@@ -128,7 +133,7 @@
     openOnce:         false          // if true, remember opened state per session
   };
 
-  var NUMERIC = ['envelopeAspect', 'envelopeScale', 'flapDepth', 'sealScale',
+  var NUMERIC = ['envelopeAspect', 'envelopeScale', 'flapDepth', 'sealScale', 'stampScale',
                  'cardAspect', 'autoOpen', 'stampAspect', 'detailsDelay',
                  'detailsBreakpoint'];
   var BOOLEAN = ['vignette', 'replay', 'openOnce'];
@@ -406,7 +411,7 @@
       '.face.back{transform:rotateY(180deg) translateZ(0.6px);}',
 
       /* ---------- envelope FRONT ---------- */
-      '.paper{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);}',
+      '.paper{position:absolute;top:0;right:0;bottom:0;left:0;background-color:var(--env);background-image:var(--env-img);background-size:var(--env-size);background-repeat:var(--env-rep);background-position:center;}',
       '.edge{position:absolute;top:0;right:0;bottom:0;left:0;border-radius:3px;pointer-events:none;',
       '  box-shadow:inset 0 0 0 1px var(--paper-edge);}',
 
@@ -438,17 +443,17 @@
       '.rule{width:38%;height:1px;margin:calc(var(--env-w) * .026) auto 0;background:var(--name-c);opacity:.22;}',
 
       /* ---------- envelope BACK (static, used during the flip) ---------- */
-      '.back-panel{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);}',
+      '.back-panel{position:absolute;top:0;right:0;bottom:0;left:0;background-color:var(--env);background-image:var(--env-img);background-size:var(--env-size);background-repeat:var(--env-rep);background-position:center;}',
       '.seam{position:absolute;left:0;right:0;top:var(--throat-h);height:1px;background:rgba(0,0,0,.10);}',
       '.static-flap{position:absolute;left:0;right:0;top:0;height:var(--flap-h);}',
 
       /* flap surface, shared by static + live versions */
-      '.flap-face{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--env);',
+      '.flap-face{position:absolute;top:0;right:0;bottom:0;left:0;background-color:var(--env);background-image:var(--env-img);background-size:var(--env-size);background-repeat:var(--env-rep);background-position:center;',
       '  box-shadow:0 4px 10px rgba(0,0,0,.14);}',
       '.flap-face.point{-webkit-clip-path:polygon(0 0,100% 0,100% 52%,50% 100%,0 52%);',
       '  clip-path:polygon(0 0,100% 0,100% 52%,50% 100%,0 52%);}',
       '.flap-face.straight{clip-path:polygon(0 0,100% 0,100% 100%,0 100%);}',
-      '.flap-lining{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--liner);}',
+      '.flap-lining{position:absolute;top:0;right:0;bottom:0;left:0;background-color:var(--liner);background-image:var(--liner-img);background-size:var(--liner-size);background-repeat:var(--liner-rep);background-position:center;}',
 
       '.seal{position:absolute;left:50%;top:calc(var(--flap-h) * 0.60);',
       '  width:var(--seal-d);height:var(--seal-d);transform:translate(-50%,-50%);z-index:3;pointer-events:none;',
@@ -465,7 +470,7 @@
       '.stage.live .env-inner{opacity:0;}',
 
       '.throat{position:absolute;left:0;right:0;top:0;height:calc(var(--throat-h) + 1px);',
-      '  background:var(--liner);z-index:2;border-radius:3px 3px 0 0;',
+      '  background-color:var(--liner);background-image:var(--liner-img);background-size:var(--liner-size);background-repeat:var(--liner-rep);background-position:center;z-index:2;border-radius:3px 3px 0 0;',
       '  box-shadow:inset 0 2px 0 var(--throat-edge);}',
 
       '.pocket{position:absolute;left:0;right:0;top:var(--throat-h);bottom:0;z-index:6;',
@@ -861,6 +866,15 @@
     s.setProperty('--stage-r', cfg.stageRadius);
     s.setProperty('--env', cfg.envelopeColor);
     s.setProperty('--liner', cfg.linerColor);
+    // optional graphics sit above the flat colour; 'tile' repeats at natural size
+    function surface(prefix, img, size) {
+      var tile = (size === 'tile' || size === 'auto');
+      s.setProperty(prefix + '-img', img ? cssUrl(img) : 'none');
+      s.setProperty(prefix + '-size', tile ? 'auto' : (size === 'contain' ? 'contain' : 'cover'));
+      s.setProperty(prefix + '-rep', tile ? 'repeat' : 'no-repeat');
+    }
+    surface('--env', cfg.envelopeImage, cfg.envelopeImageSize);
+    surface('--liner', cfg.linerImage, cfg.linerImageSize);
     // a flat lip along the fold so the opening still reads as an opening
     s.setProperty('--throat-edge', luminance(cfg.linerColor) > 0.4
       ? 'rgba(0,0,0,.22)' : 'rgba(255,255,255,.16)');
@@ -1048,7 +1062,8 @@
 
     // The stamp is the wordmark box plus an even margin, then a ring of
     // perforations outside that, so its proportions follow the artwork.
-    var logoW = envW * 0.17;
+    var stampS = parseFloat(cfg.stampScale); if (!(stampS > 0)) stampS = 1;
+    var logoW = envW * 0.17 * stampS;
     var logoH = logoW / (this.stampAR || cfg.stampAspect || 1.708);
     var pad = parseFloat(cfg.stampPadding);
     if (!(pad > 0)) pad = Math.max(6, Math.min(16, envW * 0.025));

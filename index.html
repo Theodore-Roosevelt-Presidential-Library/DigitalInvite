@@ -47,6 +47,10 @@
   summary::after{content:"+";font-weight:400;font-size:18px;color:var(--muted);}
   details[open] summary::after{content:"–";}
   .fields{padding:2px 22px 22px;}
+  /* nested 'Advanced' group inside a panel: quieter than a top-level section */
+  details.advanced{border:1px dashed var(--line);border-radius:4px;margin:4px 0 12px;}
+  details.advanced summary{padding:9px 12px;font-size:11px;letter-spacing:.1em;color:var(--muted);}
+  details.advanced .fields{padding:2px 12px 6px;}
 
   label{display:block;margin:0 0 15px;}
   label .lb{display:block;font-size:12px;font-weight:700;letter-spacing:.03em;margin-bottom:5px;}
@@ -374,6 +378,36 @@
         <label><span class="lb">Envelope size</span>
           <input type="number" step="0.05" min="0.6" max="1.4" data-k="envelopeScale" value="1">
         </label>
+        <details class="advanced">
+          <summary>Advanced — custom graphics</summary>
+          <div class="fields">
+            <label><span class="lb">Liner image URL <span style="font-weight:400;color:var(--muted)">(optional)</span></span>
+              <input type="text" data-k="linerImage" value="" placeholder="https://www.trlibrary.com/sites/default/files/…/liner.png">
+              <span class="hint">A pattern or graphic revealed inside the open flap, drawn over the liner colour — the
+                Paperless Post patterned-liner look. A seamless tile works best. Must be publicly reachable.</span>
+            </label>
+            <label><span class="lb">Liner image fit</span>
+              <select data-k="linerImageSize">
+                <option value="tile">Tile at natural size</option>
+                <option value="cover">Cover</option>
+                <option value="contain">Contain</option>
+              </select>
+            </label>
+            <label><span class="lb">Envelope paper image URL <span style="font-weight:400;color:var(--muted)">(optional)</span></span>
+              <input type="text" data-k="envelopeImage" value="" placeholder="https://www.trlibrary.com/sites/default/files/…/paper.jpg">
+              <span class="hint">A texture or graphic over the envelope colour, applied to the front, back and flap.
+                Keep it quiet — the recipient's name, stamp and postmark sit on top of it. The name ink is still
+                chosen from the envelope colour, so pick a colour that matches the image's tone.</span>
+            </label>
+            <label><span class="lb">Envelope paper image fit</span>
+              <select data-k="envelopeImageSize">
+                <option value="cover">Cover</option>
+                <option value="contain">Contain</option>
+                <option value="tile">Tile at natural size</option>
+              </select>
+            </label>
+          </div>
+        </details>
       </div>
     </details>
 
@@ -385,6 +419,24 @@
           <span class="swatches" data-for="sealColor"></span>
           <span class="hint">The brand mark is bundled with the embed and recoloured live — nothing to upload.</span>
         </label>
+        <label><span class="lb">Seal image URL <span style="font-weight:400;color:var(--muted)">(optional)</span></span>
+          <input type="text" data-k="sealImage" value="" placeholder="https://www.trlibrary.com/sites/default/files/…/seal.png">
+          <span class="hint">Replaces the elkhorn mark with your own artwork — a co-branded seal, say. It is drawn
+            as-is, so bake the colour into the file (transparent PNG or SVG, square) — the seal colour above is ignored.
+            Must be publicly reachable; upload it to Drupal or the DAM. Leave blank for the bundled mark.</span>
+        </label>
+        <label><span class="lb">Stamp image URL <span style="font-weight:400;color:var(--muted)">(optional)</span></span>
+          <input type="text" data-k="stampImage" value="" placeholder="https://www.trlibrary.com/sites/default/files/…/lockup.png">
+          <span class="hint">Replaces the TRPL wordmark on the postage stamp — for a co-hosted event, a lockup of both
+            logos. Transparent PNG or SVG; the stamp takes the image's proportions. A wide lockup usually wants the
+            stamp size below raised to 1.4–1.6. Leave blank for the wordmark.</span>
+        </label>
+        <label><span class="lb">Stamp size</span>
+          <input type="number" step="0.05" min="0.6" max="2" data-k="stampScale" value="1">
+        </label>
+        <span class="hint">Note: the Constant Contact email uses its own flattened PNGs (wordmark, stamp, seal) and does not
+          pick these up. To co-brand the email, host a replacement set of the eight <code>assets/email</code> images and
+          point <em>Where the email images are hosted</em> at that folder.</span>
         <label><span class="lb">Perforation depth</span>
           <input type="text" data-k="stampPerf" value="auto">
           <span class="hint">Depth of one tooth on the stamp's torn edge. <code>auto</code> scales

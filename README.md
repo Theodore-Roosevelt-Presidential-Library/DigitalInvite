@@ -420,6 +420,10 @@ Only the values that differ from the defaults need to appear in the snippet.
 |---|---|---|
 | `envelope-color` | `#D1CCBD` | Paper — Sand. Rendered flat, no gradient |
 | `liner-color` | `#E7805D` | Inside and flap underside — Deep Orange. Keep it distinct from both the background and the paper |
+| `liner-image` | — | Optional pattern or graphic drawn over the liner colour — the patterned-liner look. Public URL |
+| `liner-image-size` | `tile` | `tile` (repeat at natural size), `cover` or `contain` |
+| `envelope-image` | — | Optional texture or graphic over the envelope colour, on the front, back and flap |
+| `envelope-image-size` | `cover` | `cover`, `contain` or `tile` |
 | `envelope-aspect` | `1.38` | Width ÷ height. `1.38` is a standard A7, 7¼ × 5¼ landscape; `0.72` gives a portrait envelope |
 | `envelope-scale` | `1` | Size multiplier |
 | `flap-shape` | `point` | `point` or `straight` |
@@ -430,7 +434,7 @@ Only the values that differ from the defaults need to appear in the snippet.
 | Option | Default | Description |
 |---|---|---|
 | `seal-color` | `#FC924E` | Elkhorn brand mark — recoloured live, no upload needed |
-| `seal-image` | — | Override the bundled mark with any image URL |
+| `seal-image` | — | Override the bundled mark with any image URL. Drawn as-is (not recoloured), so bake the colour into the file |
 | `seal-scale` | `1` | Size multiplier |
 | `stamp-paper` | `#FFFFFF` | Postage stamp background |
 | `stamp-aspect` | `1.708` | Width ÷ height of the stamp artwork; auto-detected for a custom `stamp-image` |
@@ -439,6 +443,7 @@ Only the values that differ from the defaults need to appear in the snippet.
 | `stamp-edge` | `none` | Optional hairline along the perforated edge; give it a colour to draw one |
 | `stamp-ink` | `auto` | TRPL wordmark colour; `auto` reads off the stamp paper |
 | `stamp-image` | — | Override the wordmark |
+| `stamp-scale` | `1` | Size multiplier for the whole stamp; a wide co-branded lockup usually wants 1.4–1.6 |
 
 ### Details panel
 
