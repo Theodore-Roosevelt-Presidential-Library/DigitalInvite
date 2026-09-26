@@ -469,6 +469,12 @@ Only the values that differ from the defaults need to appear in the snippet.
 | Button label | `Open your invitation` | |
 | Where the email images are hosted | `.../assets/email` | Email needs absolute URLs |
 
+A co-branded set for events hosted with the Theodore Roosevelt Medora Foundation lives at
+`assets/email-trmf/` (same eight filenames; wordmark and stamp carry both logos, the seal is
+TR's two ranch brands). Point *Where the email images are hosted* at
+`https://rsvp.labs.trlibrary.com/assets/email-trmf` to use it. `assets/email` is unchanged, so
+every email already sent keeps its images.
+
 
 ### Buttons & behaviour
 
