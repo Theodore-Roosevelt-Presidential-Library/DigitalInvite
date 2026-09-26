@@ -155,6 +155,10 @@ The panel is optional and additive: existing embeds are unaffected.
 
 ### Editing
 
+The builder never uses `window.prompt`, `confirm` or `alert` — those block the tab and cannot be
+driven by automation — so the link, clear and error dialogs are in-page overlays (`dialog()` in
+`index.html`). Keep it that way when adding anything that needs confirmation.
+
 The builder has a small editor for this — bold, italic, underline, bulleted and numbered lists,
 links, and Heading 3 / Heading 4 / Paragraph. Headings render in Dharma Gothic all-caps, body
 copy in ITC Clearface, matching the panel exactly.
@@ -473,7 +477,7 @@ Only the values that differ from the defaults need to appear in the snippet.
 
 A co-branded set for events hosted with the Theodore Roosevelt Medora Foundation lives at
 `assets/email-trmf/` (same eight filenames; wordmark and stamp carry both logos, the seal is
-TR's two ranch brands). Point *Where the email images are hosted* at
+TR's three ranch brands — Maltese cross, triangle and elkhorn — with no ring). Point *Where the email images are hosted* at
 `https://rsvp.labs.trlibrary.com/assets/email-trmf` to use it. `assets/email` is unchanged, so
 every email already sent keeps its images.
 

@@ -96,6 +96,20 @@
        padding:8px 15px;font-family:var(--display);font-size:13px;letter-spacing:.08em;
        text-transform:uppercase;cursor:pointer;}
   .btn.ghost{background:#fff;color:var(--ink);}
+
+  /* In-page dialog. Replaces window.prompt/confirm/alert, which block the
+     tab and cannot be driven by automation or styled to match the builder. */
+  .dlg{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;
+       background:rgba(37,40,42,.55);padding:20px;}
+  .dlg[hidden]{display:none;}
+  .dlg-box{background:#fff;border-radius:6px;width:min(440px,100%);padding:22px 24px 20px;
+       box-shadow:0 20px 50px rgba(0,0,0,.35);font-family:var(--body);}
+  .dlg-box h3{margin:0 0 8px;font-family:var(--display);font-size:15px;letter-spacing:.1em;text-transform:uppercase;}
+  .dlg-box p{margin:0 0 14px;font-size:14px;line-height:1.5;color:var(--muted);}
+  .dlg-box p:empty{display:none;}
+  .dlg-box input{width:100%;box-sizing:border-box;margin:0 0 16px;}
+  .dlg-box input[hidden]{display:none;}
+  .dlg-actions{display:flex;gap:10px;justify-content:flex-end;}
   .btn:hover{filter:brightness(1.2);}
 
   #mountWrap{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px;}
@@ -673,6 +687,47 @@
    * Details editor
    * ------------------------------------------------------------------ */
   var editor = document.getElementById('editor');
+
+  /* ---------- in-page dialog (no window.prompt / confirm / alert) ----------
+     dialog({title, message, input, placeholder, value, ok, cancel}) -> Promise
+     Resolves with the input text (or true) on OK, null on Cancel / Esc / backdrop.
+     Native dialogs block the whole tab, cannot be styled, and cannot be
+     clicked by automation; this can. */
+  function dialog(o){
+    return new Promise(function(resolve){
+      var box = document.getElementById('dlg');
+      var inp = document.getElementById('dlgInput');
+      var okB = document.getElementById('dlgOk'), noB = document.getElementById('dlgCancel');
+      document.getElementById('dlgTitle').textContent = o.title || '';
+      document.getElementById('dlgMsg').textContent = o.message || '';
+      okB.textContent = o.ok || 'OK';
+      noB.textContent = o.cancel || 'Cancel';
+      noB.hidden = o.cancel === false;
+      inp.hidden = !o.input;
+      inp.value = o.value || '';
+      inp.placeholder = o.placeholder || '';
+      var prev = document.activeElement;
+      function close(v){
+        box.hidden = true;
+        okB.removeEventListener('click', onOk); noB.removeEventListener('click', onNo);
+        box.removeEventListener('click', onBack); document.removeEventListener('keydown', onKey);
+        if (prev && prev.focus) { try { prev.focus(); } catch(e){} }
+        resolve(v);
+      }
+      function onOk(){ close(o.input ? inp.value : true); }
+      function onNo(){ close(null); }
+      function onBack(e){ if (e.target === box) close(null); }
+      function onKey(e){
+        if (e.key === 'Escape'){ e.preventDefault(); close(null); }
+        else if (e.key === 'Enter' && (o.input ? e.target === inp : true)){ e.preventDefault(); onOk(); }
+      }
+      okB.addEventListener('click', onOk); noB.addEventListener('click', onNo);
+      box.addEventListener('click', onBack); document.addEventListener('keydown', onKey);
+      box.hidden = false;
+      (o.input ? inp : okB).focus();
+      if (o.input) inp.select();
+    });
+  }
   var ED_ALLOWED = {H3:1,H4:1,P:1,STRONG:1,B:1,EM:1,I:1,U:1,UL:1,OL:1,LI:1,A:1,BR:1,HR:1,SMALL:1};
   /* SPAN is deliberately absent: with its attributes stripped it carries no
      meaning and only leaves empty tags behind from Word and Quill. */
@@ -915,12 +970,21 @@
 
   document.getElementById('edLink').addEventListener('click', function(){
     editor.focus();
-    var url = window.prompt('Link to (https://…, mailto:… or /page)');
-    if (url === null) return;
-    var safe = safeHref(url);
-    if (!safe){ window.alert('That link was not a recognised address, so nothing was added.'); return; }
-    document.execCommand('createLink', false, safe);
-    edRefresh();
+    // the dialog takes focus, so remember the selection and put it back before linking
+    var sel = window.getSelection();
+    var range = sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+    dialog({ title:'Add link', message:'https://…, mailto:… or /page', input:true, placeholder:'https://', ok:'Add link' })
+      .then(function(url){
+        if (url === null) return;
+        var safe = safeHref(url);
+        editor.focus();
+        if (range){ sel.removeAllRanges(); sel.addRange(range); }
+        if (!safe){
+          return dialog({ title:'Link not added', message:'That was not a recognised address (https://, mailto:, tel: or /page), so nothing was added.', cancel:false });
+        }
+        document.execCommand('createLink', false, safe);
+        edRefresh();
+      });
   });
 
   document.getElementById('edRule').addEventListener('click', function(){
@@ -930,10 +994,10 @@
   });
 
   document.getElementById('edClear').addEventListener('click', function(){
-    if (!editor.textContent.trim() || window.confirm('Clear the whole details panel?')){
-      editor.innerHTML = '';
-      edRefresh();
-    }
+    function clear(){ editor.innerHTML = ''; edRefresh(); }
+    if (!editor.textContent.trim()) return clear();
+    dialog({ title:'Clear the details panel?', message:'Everything in the panel will be removed.', ok:'Clear', cancel:'Keep' })
+      .then(function(yes){ if (yes) clear(); });
   });
 
   editor.addEventListener('paste', function(e){
@@ -1610,5 +1674,16 @@
   render();
 })();
 </script>
+<div class="dlg" id="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+  <div class="dlg-box">
+    <h3 id="dlgTitle"></h3>
+    <p id="dlgMsg"></p>
+    <input type="text" id="dlgInput" hidden>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="dlgCancel">Cancel</button>
+      <button type="button" class="btn" id="dlgOk">OK</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
