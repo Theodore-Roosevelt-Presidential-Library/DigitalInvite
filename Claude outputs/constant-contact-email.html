@@ -1,0 +1,354 @@
+<!--
+  ============================================================================
+  TRPL Digital Invite — Constant Contact custom-code email
+  ============================================================================
+
+  HOW TO USE
+    1. Constant Contact > Create > Email > Custom Code.
+    2. Paste this entire file into the HTML body.
+    3. Replace every double-braced placeholder below. The builder at
+       https://rsvp.labs.trlibrary.com/ fills them in for you and hands back
+       finished code, so hand-editing this file is the fallback, not the norm.
+    4. Send yourself a test before scheduling. See TEST BEFORE YOU SEND.
+
+  PLACEHOLDERS
+    Legislative Day      Exhibition opening, gala, dinner…
+    Friday, October 23, 2026 · from 3:00 PM      "Thursday, October 1, 2026 · 5:30 PM"
+    Medora, North Dakota     "Theodore Roosevelt Presidential Library, Medora"
+    https://www.trlibrary.com/legislative-day      Page carrying the animated invitation embed
+    Open your invitation    "Open your invitation"
+    The Theodore Roosevelt Presidential Library and Theodore Roosevelt Medora Foundation invite you to Medora for an evening of conversation, connection, and celebration.           One or two lines above the envelope
+    https://rsvp.labs.trlibrary.com/assets/email-trmf      https://rsvp.labs.trlibrary.com/assets/email
+    Theodore Roosevelt Presidential Library and Theodore Roosevelt Medora Foundation        Sign-off line and image alt text — "Theodore Roosevelt Presidential Library",
+                        or both organizations for a co-hosted event
+    Honored Guest   Greeting when the contact has no first name — "Friend of the Library"
+
+  IF PEOPLE CANNOT REACH THE INVITATION
+    Constant Contact rewrites every href into an r20 tracking redirect, and it
+    is those redirect domains that corporate filters most often block. There is
+    no supported way to opt a single link out of that. This template works
+    around it two ways:
+
+      1. Ten separate clickable regions — the wordmark, the headline, the
+         stamp, the postmark, the "To" label, the guest's name, the button,
+         the caption link, the seal and the event name — so one blocked or
+         mis-rendered element does not strand the reader.
+      2. A plain-text address near the bottom that is deliberately NOT a link.
+         With no href there is nothing for Constant Contact to rewrite and
+         nothing for a filter to strip, so it survives and can be copied by
+         hand.
+
+    Also worth doing: ask IT to allow-list the sending domain, and keep the
+    invitation URL on a domain recipients already trust (trlibrary.com) rather
+    than a shortener.
+
+  TEST BEFORE YOU SEND
+    The links carry the guest name, e.g. https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]].
+    Send a test to yourself, click through, and confirm the envelope shows a
+    real name rather than the word FIRSTNAME.
+
+    First-name-only remains the default because it has no space to escape.
+    The full-name form was verified working on 2026-09-22 in Outlook web and
+    Apple Mail — the percent-escape survived the tracking rewrite and the
+    invitation arrived hand-addressed — so it is no longer suspect, just less
+    defensive.
+
+  AFTER YOU PASTE INTO CONSTANT CONTACT
+    What ships is not what you pasted. Constant Contact rewrites every href
+    into a tracking redirect and silently sanitises markup it does not like.
+    Before scheduling:
+
+      1. Reopen the saved campaign and read the HTML back. Confirm nothing you
+         depend on was dropped. Attributes on VML elements do not survive,
+         which is why this template no longer contains any.
+      2. Send a test and click every region, the envelope included, not only
+         the button.
+      3. Check the click rate within 24 hours of the live send. A normal open
+         rate next to a zero click rate is a broken link, not a soft audience.
+         That exact pattern went unnoticed for three weeks in 2026.
+
+  NOTES
+    - Constant Contact adds its own footer with your physical address and the
+      unsubscribe link. Do not add another; you would send two of each.
+    - [[trackingImage]] must stay in the body or open rates go unreported.
+    - No web fonts: Dharma Gothic and ITC Clearface will not load in email, so
+      this uses Georgia and a condensed sans that ship with the OS.
+    - Constant Contact rejects custom code containing three character pairs:
+      an open square bracket followed by a hash, a dollar sign followed by an
+      open brace, and a less-than sign followed by an at sign. They are spelled
+      out here rather than shown, because writing them would trip the same rule
+      and get this template rejected on paste.
+  ============================================================================
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="format-detection" content="telephone=no,address=no,email=no,date=no" />
+<title>Legislative Day</title>
+<style type="text/css">
+  /* Constant Contact inlines these on send. */
+  body { margin:0; padding:0; background-color:#1B4532; }
+  img { border:0; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; display:block; }
+  table { border-collapse:collapse; }
+  a { color:#FFFFFF; }
+
+  .wrap      { width:640px; }
+  .env-name  { font-family:Georgia,'Times New Roman',serif; font-size:30px; line-height:1.2;
+               color:#25282A; }
+  .env-to    { font-family:'Arial Narrow',Arial,Helvetica,sans-serif; font-size:11px;
+               letter-spacing:3px; text-transform:uppercase; color:#25282A; }
+  .headline  { font-family:'Arial Narrow','Helvetica Neue Condensed',Arial,Helvetica,sans-serif;
+               font-size:30px; font-weight:700; letter-spacing:1px; line-height:1.1;
+               text-transform:uppercase; color:#FFFFFF; }
+  .intro     { font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:1.6;
+               color:#CDD6D2; }
+  .detail    { font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:1.55;
+               color:#FFFFFF; }
+  .detail-lb { font-family:'Arial Narrow','Helvetica Neue Condensed',Arial,Helvetica,sans-serif;
+               font-size:11px; font-weight:700; letter-spacing:2px;
+               text-transform:uppercase; color:#87BB41; }
+  .btn-text  { font-family:'Arial Narrow','Helvetica Neue Condensed',Arial,Helvetica,sans-serif;
+               font-size:17px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+  .fine      { font-family:Georgia,'Times New Roman',serif; font-size:12px; line-height:1.6;
+               color:#98ABA3; }
+  /* Design elements that are also links: no blue, no underline. */
+  .plainlink { text-decoration:none; }
+  .fallback  { font-family:Georgia,'Times New Roman',serif; font-size:13px; line-height:1.7;
+               color:#FFFFFF; word-break:break-all; }
+  .fallback-lb { font-family:'Arial Narrow','Helvetica Neue Condensed',Arial,Helvetica,sans-serif;
+               font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+               color:#87BB41; }
+
+  /* Phones: shrink the envelope and stack the detail rows. */
+  @media only screen and (max-width:620px) {
+    .wrap        { width:100% !important; }
+    .pad-side    { padding-left:20px !important; padding-right:20px !important; }
+    .env-name    { font-size:23px !important; }
+    .headline    { font-size:24px !important; letter-spacing:0.5px !important; }
+    /* keep the 1.38:1 envelope proportion as the width drops */
+    .env-table   { width:100% !important; }
+    .env-cell    { height:212px !important; padding:21px 22px !important; }
+    .stamp-img   { width:75px !important; }
+    .postmark-img{ width:65px !important; }
+    .env-gap     { height:43px !important; line-height:43px !important; font-size:43px !important; }
+    .stack       { display:block !important; width:100% !important; }
+    .stack-gap   { height:14px !important; line-height:14px !important; font-size:14px !important; }
+  }
+</style>
+<!--[if mso]>
+<style type="text/css">
+  .env-name  { font-family:Georgia,serif !important; }
+  .env-to { font-family:Arial,sans-serif !important; }
+  .headline, .detail-lb, .btn-text { font-family:Arial,sans-serif !important; font-weight:700 !important; }
+</style>
+<![endif]-->
+</head>
+
+<body style="margin:0; padding:0; background-color:#1B4532;">
+[[trackingImage]]
+
+<!-- Preheader: the grey line beside the subject in the inbox. -->
+<div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#1B4532;">
+  Friday, October 23, 2026 · from 3:00 PM &nbsp; Medora, North Dakota &nbsp;&mdash;&nbsp; open your invitation.
+  &nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
+</div>
+
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#1B4532;">
+<tr><td align="center" style="padding:0;">
+
+  <!--[if mso]><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="640"><tr><td><![endif]-->
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="wrap" width="640" style="width:640px; max-width:640px;">
+
+    <!-- ── wordmark ─────────────────────────────────────────────── -->
+    <tr>
+      <td align="center" class="pad-side" style="padding:34px 40px 26px 40px;">
+        <a href="https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]]%20[[LASTNAME]]" class="plainlink" style="text-decoration:none;">
+          <img src="https://rsvp.labs.trlibrary.com/assets/email-trmf/wordmark-white.png" width="188" height="128" alt="Theodore Roosevelt Presidential Library and Theodore Roosevelt Medora Foundation"
+               style="width:188px; height:auto; display:block; border:0;" />
+        </a>
+      </td>
+    </tr>
+
+    <!-- ── headline + intro ─────────────────────────────────────── -->
+    <tr>
+      <td align="center" class="pad-side headline" style="padding:0 40px 14px 40px;">
+        <a href="https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]]%20[[LASTNAME]]" class="plainlink"
+           style="color:#FFFFFF; text-decoration:none;">You&rsquo;re Invited</a>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" class="pad-side intro" style="padding:0 52px 30px 52px;">
+        The Theodore Roosevelt Presidential Library and Theodore Roosevelt Medora Foundation invite you to Medora for an evening of conversation, connection, and celebration.
+      </td>
+    </tr>
+
+    <!-- ── the envelope ─────────────────────────────────────────────
+         Built from table cells rather than an image so the guest's name
+         is live text: it personalises per recipient and stays legible
+         when images are blocked.
+    ────────────────────────────────────────────────────────────── -->
+    <tr>
+      <td align="center" class="pad-side" style="padding:0 40px 8px 40px;">
+        <!-- 460 x 333 is 1.38:1 — a real A7 envelope, and the same proportion
+             the animated invitation uses, so the two read as one object.
+             The height is set on the cell so it holds even when the address
+             block is short; a long name simply grows it. -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="460"
+               class="env-table" style="width:460px; max-width:100%; background-color:#FFFFFF;">
+          <tr>
+            <td class="env-cell" height="273" valign="top" style="height:273px; padding:30px 32px 30px 32px;">
+
+              <!-- stamp left, postmark right, sitting on a common line -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tr>
+                  <td align="left" valign="middle" style="padding:0;">
+                    <a href="https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]]%20[[LASTNAME]]" class="plainlink" style="text-decoration:none;">
+                      <img src="https://rsvp.labs.trlibrary.com/assets/email-trmf/stamp.png" width="107" class="stamp-img"
+                           alt="Theodore Roosevelt Presidential Library and Theodore Roosevelt Medora Foundation"
+                           style="width:107px; height:auto; display:block; border:0;" />
+                    </a>
+                  </td>
+                  <td align="right" valign="middle" style="padding:0;">
+                    <a href="https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]]%20[[LASTNAME]]" class="plainlink" style="text-decoration:none;">
+                      <img src="https://rsvp.labs.trlibrary.com/assets/email-trmf/postmark.png" width="93" alt="" class="postmark-img"
+                           style="width:93px; height:auto; display:block; border:0;" />
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- addressed to, sitting a little below the middle as on real mail -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tr><td class="env-gap" style="height:62px; line-height:62px; font-size:62px;">&nbsp;</td></tr>
+                <tr>
+                  <td align="center" class="env-to" style="padding:0 0 8px 0;">
+                    <a href="https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]]%20[[LASTNAME]]" class="plainlink"
+                       style="color:#25282A; text-decoration:none;">To</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" class="env-name" style="padding:0 0 14px 0;">
+                    <a href="https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]]%20[[LASTNAME]]" class="plainlink"
+                       style="color:#25282A; text-decoration:none;">[[FIRSTNAME OR "Honored Guest"]] [[LASTNAME OR ""]]</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding:0;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="180" style="width:180px;">
+                      <tr><td style="height:1px; line-height:1px; font-size:1px; background-color:#B3B4B4;">&nbsp;</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- ── call to action ───────────────────────────────────────── -->
+    <tr>
+      <td align="center" class="pad-side" style="padding:30px 40px 6px 40px;">
+        <!-- Outlook gets this same anchor button. A VML roundrect used to sit here
+             so Outlook would render rounded corners, but Constant Contact strips
+             href, xmlns:w and anchorlock off VML when the campaign is saved. That
+             left Outlook desktop showing a button that did nothing, with no second
+             path, because the anchor below was fenced off in a non-Outlook branch.
+             Two pixels of border-radius is a cheap price for a link that works.
+             See "Why there is no Outlook-only button" in the README. -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+          <tr>
+            <td align="center" bgcolor="#87BB41" style="background-color:#87BB41; border-radius:2px;">
+              <a href="https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]]%20[[LASTNAME]]" class="btn-text"
+                 style="display:block; padding:16px 38px 14px 38px; color:#25282A; text-decoration:none;">
+                Open your invitation
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" class="pad-side fine" style="padding:12px 40px 32px 40px;">
+        Opens in your browser &mdash; no app, no account.<br />
+        <a href="https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]]%20[[LASTNAME]]" style="color:#87BB41; text-decoration:underline;">Open the invitation</a>
+      </td>
+    </tr>
+
+    <!-- ── the essentials, in case they never click ─────────────── -->
+    <tr>
+      <td class="pad-side" style="padding:0 40px 6px 40px;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+          <tr><td style="height:1px; line-height:1px; font-size:1px; background-color:#4D6E5F;">&nbsp;</td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="pad-side" style="padding:26px 40px 6px 40px;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+          <tr>
+            <td class="stack" valign="top" width="50%" style="width:50%; padding:0 12px 0 0;">
+              <div class="detail-lb" style="padding-bottom:6px;">When</div>
+              <div class="detail">Friday, October 23, 2026 · from 3:00 PM</div>
+            </td>
+            <td class="stack-gap" style="display:none; height:0; line-height:0; font-size:0;">&nbsp;</td>
+            <td class="stack" valign="top" width="50%" style="width:50%; padding:0 0 0 12px;">
+              <div class="detail-lb" style="padding-bottom:6px;">Where</div>
+              <div class="detail">Medora, North Dakota</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- ── fallback address ─────────────────────────────────────────
+         Deliberately NOT wrapped in an anchor. Constant Contact rewrites
+         every href into a tracking redirect, and it is those redirect
+         domains that content filters tend to block or strip. With no href
+         there is nothing to rewrite, so this address survives intact and
+         can be read, typed or copied even when every link above is gone.
+    ────────────────────────────────────────────────────────────── -->
+    <tr>
+      <td class="pad-side" style="padding:26px 40px 0 40px;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+               style="width:100%; border:1px solid #4D6E5F;">
+          <tr>
+            <td align="center" style="padding:18px 22px 20px 22px;">
+              <div class="fallback-lb" style="padding-bottom:8px;">Button not working?</div>
+              <div class="fine" style="padding-bottom:10px;">
+                Some workplace mail systems block buttons and links. Copy this
+                address into your browser instead:
+              </div>
+              <div class="fallback">https://www.trlibrary.com/legislative-day</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- ── sign-off ─────────────────────────────────────────────── -->
+    <tr>
+      <td align="center" class="pad-side" style="padding:38px 40px 10px 40px;">
+        <a href="https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]]%20[[LASTNAME]]" class="plainlink" style="text-decoration:none;">
+          <img src="https://rsvp.labs.trlibrary.com/assets/email-trmf/seal-orange.png" width="54" height="54" alt="Theodore Roosevelt Presidential Library and Theodore Roosevelt Medora Foundation"
+               style="width:54px; height:54px; display:block; border:0;" />
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" class="pad-side fine" style="padding:0 52px 40px 52px;">
+        <a href="https://www.trlibrary.com/legislative-day?name=[[FIRSTNAME]]%20[[LASTNAME]]" style="color:#98ABA3; text-decoration:none;">Legislative Day</a><br />
+        Theodore Roosevelt Presidential Library and Theodore Roosevelt Medora Foundation &middot; Medora, North Dakota
+      </td>
+    </tr>
+
+  </table>
+  <!--[if mso]></td></tr></table><![endif]-->
+
+</td></tr>
+</table>
+</body>
+</html>

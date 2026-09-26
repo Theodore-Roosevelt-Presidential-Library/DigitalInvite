@@ -360,6 +360,11 @@ email gets the email, and the person who built it can open `preview.html` to che
 before passing it on. The zip is written by a small stored-entry writer in the builder rather than
 a library, so the page still has no JavaScript dependencies.
 
+**Import code…** goes the other way: paste an embed snippet copied off a live page, the JavaScript
+API version, or a share link, and the builder reloads with every setting in it — so an invitation
+can be revised from its published code even when the share link was never kept. A snippet does
+not carry the email fields, so those are left as they were; a share link restores everything.
+
 **Copy share link** produces a URL with the entire build encoded into it — every colour, the card
 image, the RSVP link, the details copy and the email fields. Opening it restores the builder
 exactly, so the web team can review or adjust without rebuilding from a description. Typical

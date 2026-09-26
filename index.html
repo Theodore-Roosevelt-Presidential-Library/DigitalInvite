@@ -109,6 +109,9 @@
   .dlg-box p:empty{display:none;}
   .dlg-box input{width:100%;box-sizing:border-box;margin:0 0 16px;}
   .dlg-box input[hidden]{display:none;}
+  .dlg-box textarea{width:100%;box-sizing:border-box;margin:0 0 16px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;resize:vertical;}
+  .dlg-box textarea[hidden]{display:none;}
+  .dlg-box.wide{width:min(640px,100%);}
   .dlg-actions{display:flex;gap:10px;justify-content:flex-end;}
   .btn:hover{filter:brightness(1.2);}
 
@@ -541,6 +544,7 @@
         <button type="button" class="btn" id="copyBtn">Copy embed code</button>
         <button type="button" class="btn ghost" id="downloadBtn">Download everything (.zip)</button>
         <button type="button" class="btn ghost" id="shareBtn">Copy share link</button>
+        <button type="button" class="btn ghost" id="importBtn">Import code…</button>
         <span id="copied" style="font-size:12px;color:var(--muted);"></span>
       </div>
       <div class="pvbar" style="margin-top:2px">
@@ -696,7 +700,10 @@
   function dialog(o){
     return new Promise(function(resolve){
       var box = document.getElementById('dlg');
-      var inp = document.getElementById('dlgInput');
+      var inp = o.multiline ? document.getElementById('dlgText') : document.getElementById('dlgInput');
+      document.getElementById('dlgInput').hidden = true;
+      document.getElementById('dlgText').hidden = true;
+      box.querySelector('.dlg-box').classList.toggle('wide', !!o.multiline);
       var okB = document.getElementById('dlgOk'), noB = document.getElementById('dlgCancel');
       document.getElementById('dlgTitle').textContent = o.title || '';
       document.getElementById('dlgMsg').textContent = o.message || '';
@@ -719,7 +726,8 @@
       function onBack(e){ if (e.target === box) close(null); }
       function onKey(e){
         if (e.key === 'Escape'){ e.preventDefault(); close(null); }
-        else if (e.key === 'Enter' && (o.input ? e.target === inp : true)){ e.preventDefault(); onOk(); }
+        else if (e.key === 'Enter' && !o.multiline && (o.input ? e.target === inp : true)){ e.preventDefault(); onOk(); }
+        else if (e.key === 'Enter' && o.multiline && (e.metaKey || e.ctrlKey)){ e.preventDefault(); onOk(); }
       }
       okB.addEventListener('click', onOk); noB.addEventListener('click', onNo);
       box.addEventListener('click', onBack); document.addEventListener('keydown', onKey);
@@ -1287,6 +1295,7 @@
   }
 
   function kebab(s){ return s.replace(/[A-Z]/g, function(c){ return '-' + c.toLowerCase(); }); }
+  function camel(s){ return s.replace(/-([a-z])/g, function(m, c){ return c.toUpperCase(); }); }
   function attrEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
   function writeCode(cfg){
@@ -1412,6 +1421,94 @@
     editor.innerHTML = edSanitize(payload.details || '');
     return true;
   }
+
+  /* ---------- import: rebuild the builder from a snippet or share link ----------
+     Accepts the HTML snippet (<div data-trpl-invite …> + optional details div),
+     the JavaScript API form (TRPLInvite.create(…, {…})), or a share link /
+     bare config token. The snippet carries only the embed settings, so the
+     email fields are left as they are; a share link restores everything. */
+  function parseImport(text){
+    text = String(text || '').trim();
+    if (!text) throw new Error('Nothing to import.');
+
+    // share link or bare token
+    var m = /[?&]config=([A-Za-z0-9_-]+)/.exec(text);
+    if (m) return { kind:'share', payload: unpackConfig(m[1]) };
+    if (/^[A-Za-z0-9_-]{40,}$/.test(text)){
+      try { return { kind:'share', payload: unpackConfig(text) }; } catch(e){}
+    }
+
+    // JavaScript API: TRPLInvite.create(target, { … })
+    m = /TRPLInvite\.create\s*\(\s*[^,]+,\s*(\{[\s\S]*\})\s*\)/.exec(text);
+    if (m){
+      var obj;
+      try { obj = JSON.parse(m[1]); }
+      catch(e){ throw new Error('Found TRPLInvite.create(…) but its options are not valid JSON.'); }
+      var details = obj.detailsHtml || '';
+      delete obj.detailsHtml;
+      return { kind:'js', cfg: obj, details: details };
+    }
+
+    // HTML snippet
+    var doc = new DOMParser().parseFromString(text, 'text/html');
+    var host = doc.querySelector('[data-trpl-invite]');
+    if (!host) throw new Error('No <div data-trpl-invite …> found. Paste the whole embed snippet, the JavaScript API version, or a share link.');
+    var cfg = {};
+    Array.prototype.forEach.call(host.attributes, function(a){
+      if (a.name === 'data-trpl-invite' || a.name.indexOf('data-') !== 0) return;
+      var k = camel(a.name.slice(5)), v = a.value;
+      if (typeof DEF[k] === 'number') v = parseFloat(v);
+      else if (typeof DEF[k] === 'boolean') v = (v === 'true' || v === '');
+      cfg[k] = v;
+    });
+    var d = host.querySelector('[data-trpl-details]');
+    return { kind:'html', cfg: cfg, details: d ? d.innerHTML : '' };
+  }
+
+  /* put every embed field back to its default, then lay the imported values over it */
+  function applyEmbedConfig(cfg, details){
+    form.querySelectorAll('[data-k]').forEach(function(el){
+      var k = el.dataset.k, d = DEF[k];
+      if (d === undefined) return;
+      if (el.type === 'checkbox') el.checked = !!d; else el.value = d;
+    });
+    var explicitInk = ['nameColor','stampInk','accentTextColor'].some(function(k){
+      return cfg[k] !== undefined && cfg[k] !== 'auto';
+    });
+    document.getElementById('autoInk').checked = !explicitInk;
+    Object.keys(cfg).forEach(function(k){
+      var el = form.querySelector('[data-k="'+k+'"]');
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!cfg[k]; else el.value = cfg[k];
+    });
+    form.querySelectorAll('input[data-c]').forEach(function(pk){
+      var t = form.querySelector('input[type=text][data-k="'+pk.dataset.c+'"]');
+      if (t && /^#[0-9a-f]{6}$/i.test(t.value)) pk.value = t.value;
+    });
+    editor.innerHTML = edSanitize(details || '');
+  }
+
+  document.getElementById('importBtn').addEventListener('click', function(){
+    dialog({
+      title:'Import code',
+      message:'Paste an embed snippet, the JavaScript API version, or a share link. Every setting in it replaces what is in the builder now. A snippet does not carry the email fields, so those are kept. Cmd/Ctrl-Enter to import.',
+      multiline:true, input:true, placeholder:'<div data-trpl-invite …', ok:'Import'
+    }).then(function(text){
+      if (text === null) return;
+      var parsed;
+      try { parsed = parseImport(text); }
+      catch(e){ return dialog({ title:'Could not import', message:e.message, cancel:false }); }
+      if (parsed.kind === 'share'){
+        if (!applyConfig(parsed.payload)) return dialog({ title:'Could not import', message:'That share link is not one this builder recognises.', cancel:false });
+      } else {
+        applyEmbedConfig(parsed.cfg, parsed.details);
+      }
+      render();
+      var n = document.getElementById('copied');
+      n.textContent = parsed.kind === 'share' ? 'Imported from share link.' : 'Imported — ' + Object.keys(parsed.cfg).length + ' settings' + (parsed.details ? ' and the details panel.' : '.');
+      setTimeout(function(){ n.textContent = ''; }, 5000);
+    });
+  });
 
   function shareUrl(){
     var base = location.origin + location.pathname;
@@ -1679,6 +1776,7 @@
     <h3 id="dlgTitle"></h3>
     <p id="dlgMsg"></p>
     <input type="text" id="dlgInput" hidden>
+    <textarea id="dlgText" hidden rows="9" spellcheck="false"></textarea>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="dlgCancel">Cancel</button>
       <button type="button" class="btn" id="dlgOk">OK</button>
