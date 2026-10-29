@@ -1032,6 +1032,22 @@
     if (this.hasDetails && !narrow) {
       finalH = Math.min(finalH, ((W * 0.94 - pairGap) / 2) / ar);
     }
+    // Keep the settled card clear of the button row. On a phone the details
+    // button and RSVP button stack, and the taller row can run up into the
+    // bottom of the card. Only when that would happen does the card come down
+    // in size and move up; layouts that already clear are left exactly as is.
+    var finalCY = H * 0.455;
+    var ctaEl = this.stage.querySelector('.cta');
+    var ctaH = ctaEl ? ctaEl.offsetHeight : 0;
+    if (ctaH > 0) {
+      var ctaGap = Math.max(10, H * 0.02);
+      var ctaTop = H - H * 0.045 - ctaH - ctaGap;
+      if (finalCY + finalH / 2 > ctaTop) {
+        var topEdge = H * 0.04;
+        finalH = Math.max(0, Math.min(finalH, ctaTop - topEdge));
+        finalCY = Math.min(finalCY, ctaTop - finalH / 2);
+      }
+    }
     var finalS = finalH / cardH;
     var finalW = cardW * finalS;
 
@@ -1045,7 +1061,7 @@
     }
     s.setProperty('--panel-w', finalW.toFixed(1) + 'px');
     s.setProperty('--panel-h', finalH.toFixed(1) + 'px');
-    s.setProperty('--panel-y', (H * 0.455).toFixed(1) + 'px');
+    s.setProperty('--panel-y', finalCY.toFixed(1) + 'px');
     var panelPad = parseFloat(cfg.detailsPadding);
     if (!(panelPad > 0)) panelPad = Math.max(18, Math.min(40, finalW * 0.085));
     s.setProperty('--panel-pad', panelPad.toFixed(1) + 'px');
@@ -1070,7 +1086,7 @@
     s.setProperty('--card-clip-out', clipOut.toFixed(1) + 'px');
     s.setProperty('--card-final-s', finalS.toFixed(4));
     // the card is anchored at the envelope's centre; nudge it to 45.5% of the frame
-    s.setProperty('--card-final-y', (H * (0.455 - 0.52)).toFixed(1) + 'px');
+    s.setProperty('--card-final-y', (finalCY - H * 0.52).toFixed(1) + 'px');
 
     // The stamp is the wordmark box plus an even margin, then a ring of
     // perforations outside that, so its proportions follow the artwork.
@@ -1136,6 +1152,10 @@
     // the automatic height depends on, so listen for that as well.
     this._onResize = function () { self.applyVars(); };
     global.addEventListener('resize', this._onResize);
+    // the button row's height depends on the web fonts, so measure again once they land
+    if (global.document && document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () { self.applyVars(); });
+    }
   };
 
   Invite.prototype.at = function (ms, fn) {
